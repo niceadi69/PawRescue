@@ -47,6 +47,7 @@ const STATES = [
 const MAX_FILES = 3;
 const MAX_BYTES = 5 * 1024 * 1024;
 const REF_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const FIX_NOTICE = "Please fix the highlighted fields.";
 
 const today = () => new Date().toLocaleDateString("en-CA");
 
@@ -197,12 +198,28 @@ export default function ReportCruelty() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
 
+  // Clear a field's error as soon as the person changes it
+  const clearError = (name) => {
+    const linked = { email: ["phone"], contactOk: ["phone"], anonymous: ["phone", "email"] };
+    setErrors((current) => {
+      const keys = [name, ...(linked[name] || [])].filter((key) => current[key]);
+      if (keys.length === 0) return current;
+      const next = { ...current };
+      keys.forEach((key) => delete next[key]);
+      return next;
+    });
+  };
+
   const set = (name) => (event) => {
     const { type, checked, value } = event.target;
     setForm((current) => ({ ...current, [name]: type === "checkbox" ? checked : value }));
+    clearError(name);
   };
 
-  const pick = (name, value) => setForm((current) => ({ ...current, [name]: value }));
+  const pick = (name, value) => {
+    setForm((current) => ({ ...current, [name]: value }));
+    clearError(name);
+  };
 
   const addFiles = (list) => {
     const images = Array.from(list).filter((file) => file.type.startsWith("image/"));
@@ -257,7 +274,13 @@ export default function ReportCruelty() {
     const found = validate(form);
     setErrors(found);
     if (Object.keys(found).length > 0) {
-      setNotice("Please fix the highlighted fields.");
+      setNotice(FIX_NOTICE);
+      // Bring the first problem into view
+      requestAnimationFrame(() => {
+        document
+          .querySelector(".rp-field-bad, .rp-err")
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
       return;
     }
 
@@ -625,7 +648,7 @@ export default function ReportCruelty() {
                 </label>
               </div>
 
-              {notice && (
+              {notice && !(notice === FIX_NOTICE && Object.keys(errors).length === 0) && (
                 <p className="rp-error" role="alert">
                   {notice}
                 </p>
