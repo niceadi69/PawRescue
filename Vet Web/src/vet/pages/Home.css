@@ -1,0 +1,343 @@
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'DM Sans', sans-serif;
+  background: #f8faf6;
+}
+
+.pawrescue {
+  min-height: 100vh;
+  color: #183b2a;
+  overflow: hidden;
+}
+
+/* NAVBAR */
+
+.navbar {
+  min-height: 85px;
+  padding: 16px 7%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+}
+
+.logo {
+  text-decoration: none;
+  color: #174b32;
+  font-size: 27px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.logo-icon {
+  font-size: 32px;
+}
+
+.nav-actions {
+  display: flex;
+  gap: 14px;
+}
+
+.nav-actions button {
+  padding: 12px 22px;
+  border-radius: 9px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.donate-btn {
+  background: #e5f2e9;
+  color: #205c3b;
+  border: 1px solid #c9dfd0;
+}
+
+.login-btn {
+  background: #205c3b;
+  color: white;
+  border: 1px solid #205c3b;
+}
+
+.nav-actions button:hover {
+  transform: translateY(-2px);
+}
+
+/* HERO */
+
+.hero {
+  min-height: 620px;
+  padding: 75px 9%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 55px;
+  background: linear-gradient(120deg, #f1f8f1, #ffffff);
+}
+
+.hero-content {
+  max-width: 570px;
+}
+
+.eyebrow {
+  display: inline-block;
+  color: #43875b;
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-weight: 800;
+  margin-bottom: 22px;
+}
+
+.hero h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(42px, 5vw, 66px);
+  line-height: 1.12;
+  margin: 0;
+  color: #173e2b;
+}
+
+.hero h1 span {
+  color: #4c9564;
+}
+
+.hero-description {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #617469;
+  margin: 24px 0 30px;
+  max-width: 500px;
+}
+
+/* PRIMARY BUTTON */
+
+.report-btn {
+  background: #287348;
+  color: white;
+  border: none;
+  padding: 19px 30px;
+  border-radius: 11px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 9px 22px rgba(40, 115, 72, 0.22);
+  transition: 0.25s ease;
+}
+
+.report-btn:hover {
+  background: #1d5b38;
+  transform: translateY(-3px);
+  box-shadow: 0 13px 25px rgba(40, 115, 72, 0.3);
+}
+
+.report-btn span {
+  margin-left: 10px;
+  font-size: 20px;
+}
+
+.hero-note {
+  color: #829187;
+  font-size: 13px;
+  margin-top: 17px;
+}
+
+/* ANIMAL GALLERY */
+
+.animal-gallery {
+  position: relative;
+  height: 460px;
+  max-width: 530px;
+  width: 100%;
+  margin: auto;
+}
+
+.animal-photo {
+  position: absolute;
+  overflow: hidden;
+  border-radius: 22px;
+  box-shadow: 0 15px 35px rgba(30, 65, 42, 0.15);
+  border: 6px solid white;
+}
+
+.animal-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.photo-one {
+  width: 56%;
+  height: 245px;
+  top: 0;
+  left: 0;
+}
+
+.photo-two {
+  width: 43%;
+  height: 190px;
+  top: 35px;
+  right: 0;
+}
+
+.photo-three {
+  width: 43%;
+  height: 190px;
+  bottom: 10px;
+  left: 3%;
+}
+
+.photo-four {
+  width: 55%;
+  height: 250px;
+  bottom: 0;
+  right: 0;
+}
+
+.gallery-decoration {
+  position: absolute;
+  z-index: 2;
+  top: 48%;
+  left: 34%;
+  background: white;
+  color: #287348;
+  padding: 15px 19px;
+  border-radius: 30px;
+  box-shadow: 0 7px 20px rgba(0,0,0,0.1);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.gallery-decoration span {
+  color: #e87979;
+  margin-right: 7px;
+  font-size: 17px;
+}
+
+/* MISSION */
+
+.mission {
+  text-align: center;
+  padding: 55px 20px;
+  background: white;
+}
+
+.mission h2 {
+  font-family: 'Playfair Display', serif;
+  color: #205c3b;
+  font-size: 30px;
+  margin: 0 0 12px;
+}
+
+.mission p {
+  color: #78877d;
+  margin: 0;
+  font-size: 15px;
+}
+
+footer {
+  text-align: center;
+  padding: 20px;
+  background: #174b32;
+  color: #dcece1;
+  font-size: 13px;
+}
+
+/* MOBILE RESPONSIVENESS */
+
+@media (max-width: 850px) {
+  .hero {
+    grid-template-columns: 1fr;
+    padding: 65px 7%;
+    gap: 35px;
+  }
+
+  .hero-content {
+    text-align: center;
+    margin: auto;
+  }
+
+  .hero-description {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .animal-gallery {
+    height: 390px;
+  }
+}
+
+@media (max-width: 520px) {
+  .navbar {
+    padding: 15px 5%;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+
+  .logo {
+    font-size: 22px;
+  }
+
+  .nav-actions {
+    width: 100%;
+  }
+
+  .nav-actions button {
+    flex: 1;
+    padding: 11px 8px;
+    font-size: 12px;
+  }
+
+  .hero {
+    padding: 48px 6%;
+  }
+
+  .hero h1 {
+    font-size: 42px;
+  }
+
+  .report-btn {
+    width: 100%;
+    padding: 17px 12px;
+    font-size: 14px;
+  }
+
+  .animal-gallery {
+    height: 310px;
+  }
+
+  .photo-one {
+    height: 170px;
+  }
+
+  .photo-two {
+    height: 135px;
+  }
+
+  .photo-three {
+    height: 135px;
+  }
+
+  .photo-four {
+    height: 170px;
+  }
+
+  .gallery-decoration {
+    font-size: 10px;
+    padding: 11px;
+  }
+
+  .mission h2 {
+    font-size: 24px;
+  }
+}
