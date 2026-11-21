@@ -6,8 +6,8 @@
 /* hero */
 .dn-hero {
   padding: 22px 24px 64px;
-  color: #EADBCC;
-  background: radial-gradient(120% 140% at 85% 0%, #7A4A33 0%, var(--m4-dark) 55%, #2E1A12 100%);
+  color: #dcece1;
+  background: radial-gradient(120% 140% at 85% 0%, #2b7a4b 0%, var(--m4-dark) 55%, #0f3322 100%);
 }
 
 .dn-nav {
@@ -33,7 +33,7 @@
 .dn-links a {
   padding: 8px 14px;
   border-radius: 999px;
-  color: #EADBCC;
+  color: #dcece1;
   font-weight: 700;
   text-decoration: none;
 }
@@ -56,7 +56,7 @@
 
 .dn-kicker {
   margin: 0;
-  color: #F3A57C;
+  color: #a8d5b5;
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.18em;
@@ -91,7 +91,7 @@
   color: #6B4A12;
   font-size: 14px;
   line-height: 1.5;
-  box-shadow: 0 10px 30px rgba(43, 26, 18, 0.1);
+  box-shadow: 0 10px 30px rgba(30, 65, 42, 0.1);
 }
 
 /* layout */
@@ -115,7 +115,7 @@
   border: 1px solid var(--m4-border);
   border-radius: 20px;
   background: #FFFFFF;
-  box-shadow: 0 12px 32px rgba(43, 26, 18, 0.06);
+  box-shadow: 0 12px 32px rgba(30, 65, 42, 0.06);
 }
 
 .dn-card h2,
@@ -304,7 +304,7 @@
   border: 1px solid var(--m4-border);
   border-radius: 18px;
   background: #FFFFFF;
-  box-shadow: 0 8px 24px rgba(43, 26, 18, 0.08);
+  box-shadow: 0 8px 24px rgba(30, 65, 42, 0.08);
 }
 
 .dn-qr svg {
@@ -437,7 +437,7 @@
   padding: 24px 28px;
   border-radius: 20px;
   background: var(--m4-dark);
-  color: #EADBCC;
+  color: #dcece1;
 }
 
 .dn-cta h2 {
@@ -490,4 +490,11 @@
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+/* Headings use the landing page's serif */
+.dn-hero h1,
+.dn-cta h2 {
+  font-family: 'Playfair Display', serif;
+  letter-spacing: normal;
 }

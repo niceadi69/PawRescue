@@ -13,26 +13,26 @@
   border-radius: 10px;
   border: 1px solid var(--border, #e5ebe3);
   background: var(--white, #ffffff);
-  color: var(--forest, #183c2d);
+  color: var(--forest, #174b32);
   font-size: 14px;
   font-weight: 700;
   text-decoration: none;
 }
 
 .m4-link:hover {
-  border-color: var(--green, #32865b);
-  color: var(--green, #32865b);
+  border-color: var(--green, #287348);
+  color: var(--green, #287348);
 }
 
 .m4-link-main {
-  background: var(--forest, #183c2d);
-  border-color: var(--forest, #183c2d);
+  background: var(--forest, #174b32);
+  border-color: var(--forest, #174b32);
   color: var(--white, #ffffff);
 }
 
 .m4-link-main:hover {
-  background: var(--green, #32865b);
-  border-color: var(--green, #32865b);
+  background: var(--green, #287348);
+  border-color: var(--green, #287348);
   color: var(--white, #ffffff);
 }
 
@@ -44,6 +44,6 @@
 }
 
 .m4-adopt-link a {
-  color: var(--green, #32865b);
+  color: var(--green, #287348);
   font-weight: 700;
 }

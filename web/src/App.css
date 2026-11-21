@@ -1,23 +1,23 @@
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
 
 :root {
   font-family: 'DM Sans', sans-serif;
-  color: #24382e;
-  background: #f7f8f3;
+  color: #183b2a;
+  background: #f8faf6;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 
-  --forest: #183c2d;
-  --forest-light: #24543d;
-  --green: #32865b;
-  --green-bright: #47a875;
+  --forest: #174b32;
+  --forest-light: #205c3b;
+  --green: #287348;
+  --green-bright: #4c9564;
   --sage: #e8f0e8;
   --sage-dark: #d8e6d9;
-  --cream: #f7f8f3;
+  --cream: #f8faf6;
   --white: #ffffff;
-  --text: #24382e;
-  --muted: #7c8c80;
+  --text: #183b2a;
+  --muted: #617469;
   --border: #e5ebe3;
   --coral: #e98572;
   --coral-bg: #fff0ec;
@@ -935,4 +935,23 @@ tr:hover td {
   color: var(--forest);
   text-decoration: underline;
   transform: none;
+}
+
+/* Match the landing page: serif display headings, green-tinted backdrop */
+
+.brand,
+.auth-brand h1,
+.auth-card h1,
+.welcome-card h2 {
+  font-family: 'Playfair Display', serif;
+  letter-spacing: normal;
+}
+
+.auth-page,
+.loading-screen {
+  background: linear-gradient(120deg, #f1f8f1, #ffffff);
+}
+
+.auth-card .back-home-button {
+  width: auto;
 }

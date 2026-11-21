@@ -1,7 +1,7 @@
 /* Member 4 (Rhythm): cruelty report page. Builds on member4.css and donate.css. */
 .rp-hindi {
   margin: 0 0 12px;
-  color: #F3C6A8;
+  color: #bfe3c9;
   font-size: 19px;
   font-weight: 600;
 }
@@ -18,7 +18,7 @@
   color: #7A2A1A;
   font-size: 15px;
   line-height: 1.5;
-  box-shadow: 0 10px 30px rgba(43, 26, 18, 0.1);
+  box-shadow: 0 10px 30px rgba(30, 65, 42, 0.1);
 }
 
 .rp-sos a,
@@ -139,7 +139,7 @@
 
 .rp-type-on {
   border-color: var(--m4-dark);
-  background: #FBF4EC;
+  background: #f1f8f1;
   box-shadow: 0 0 0 1px var(--m4-dark);
 }
 
@@ -184,7 +184,7 @@
 .rp-field textarea:focus {
   outline: none;
   border-color: var(--m4-dark);
-  box-shadow: 0 0 0 3px rgba(75, 46, 34, 0.12);
+  box-shadow: 0 0 0 3px rgba(30, 65, 42, 0.12);
 }
 
 .rp-field-bad input,
@@ -254,7 +254,7 @@ p.rp-hint {
 .rp-seg .rp-seg-on {
   background: #FFFFFF;
   color: var(--m4-dark);
-  box-shadow: 0 1px 3px rgba(43, 26, 18, 0.15);
+  box-shadow: 0 1px 3px rgba(30, 65, 42, 0.15);
 }
 
 .rp-seg .rp-seg-yes {
@@ -305,7 +305,7 @@ p.rp-hint {
   padding: 24px;
   border: 2px dashed var(--m4-beige);
   border-radius: 16px;
-  background: #FFFDF9;
+  background: #fbfdfb;
   color: var(--m4-dark);
   text-align: center;
   cursor: pointer;

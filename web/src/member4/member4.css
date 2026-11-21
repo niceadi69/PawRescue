@@ -1,17 +1,18 @@
 /* Member 4 (Rhythm): PawRescue vet desk, adoption desk and adoption portal.
    Classes are prefixed m4- so they never clash with the NGO dashboard. */
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
 
 :root {
-  --m4-dark: #4B2E22;
-  --m4-brown: #795548;
-  --m4-caramel: #B88962;
-  --m4-beige: #DCC5A8;
-  --m4-cream: #F7F1E8;
-  --m4-text: #35251C;
-  --m4-muted: #907D6E;
-  --m4-border: #EDE2D5;
+  /* Same palette as the landing page (pages/Home.css) */
+  --m4-dark: #174b32;
+  --m4-brown: #287348;
+  --m4-caramel: #4c9564;
+  --m4-beige: #c9dfd0;
+  --m4-cream: #f8faf6;
+  --m4-text: #183b2a;
+  --m4-muted: #617469;
+  --m4-border: #e1ebe3;
 }
 
 * {
@@ -64,28 +65,29 @@ textarea {
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  padding: 16px 24px;
-  background: var(--m4-dark);
+  padding: 16px 7%;
+  background: #FFFFFF;
+  border-bottom: 1px solid var(--m4-border);
 }
 
 .m4-topbar .m4-brand {
-  color: #FFFFFF;
+  color: var(--m4-dark);
 }
 
 .m4-topbar-title {
   margin-left: 12px;
   padding-left: 12px;
-  border-left: 1px solid rgba(255, 255, 255, 0.3);
+  border-left: 1px solid var(--m4-border);
   font-size: 16px;
   font-weight: 600;
-  color: #E9DCD0 !important;
+  color: var(--m4-muted) !important;
 }
 
 .m4-topbar-user {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #E9DCD0;
+  color: var(--m4-muted);
   font-size: 14px;
 }
 
@@ -134,7 +136,7 @@ textarea {
   display: grid;
   gap: 14px;
   padding: 32px;
-  box-shadow: 0 12px 32px rgba(75, 46, 34, 0.08);
+  box-shadow: 0 12px 32px rgba(30, 65, 42, 0.08);
 }
 
 .m4-auth h1 {
@@ -339,7 +341,7 @@ textarea {
   display: inline-block;
   padding: 4px 10px;
   border-radius: 20px;
-  background: #F0E8DE;
+  background: #e5f2e9;
   color: var(--m4-brown);
   font-size: 12px;
   font-weight: 700;
@@ -577,7 +579,7 @@ textarea {
 .m4-hero {
   padding: 48px 24px 36px;
   background: var(--m4-dark);
-  color: #E9DCD0;
+  color: #dcece1;
   text-align: center;
 }
 
@@ -642,4 +644,16 @@ textarea {
 
 .m4-hero-link:hover {
   background: rgba(255, 255, 255, 0.18);
+}
+
+/* Headings use the landing page's serif */
+.m4-heading h1,
+.m4-hero h1,
+.m4-auth h1 {
+  font-family: 'Playfair Display', serif;
+  letter-spacing: normal;
+}
+
+.m4-hero {
+  background: linear-gradient(135deg, #1d5b38 0%, #174b32 55%, #0f3322 100%);
 }
