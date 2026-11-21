@@ -54,6 +54,117 @@ def normalize_text(value):
 
 
 # -----------------------------
+# LOCATION MATCHING
+# -----------------------------
+
+def location_matches_service_area(location_text, area_name):
+    """
+    Checks whether a normalized service-area name appears
+    as a complete phrase in the rescue report location.
+    """
+
+    location = normalize_text(location_text)
+    area = normalize_text(area_name)
+
+    if not location or not area:
+        return False
+
+    padded_location = f" {location} "
+    padded_area = f" {area} "
+
+    return padded_area in padded_location
+
+
+def create_case_offers(report_id, location_text):
+    """
+    Find approved NGOs whose service areas match the report
+    location and create one offer per matching NGO.
+
+    Uses the backend service-role client.
+    """
+
+    if not location_text:
+        logger.info(
+            "No location supplied for report %s. No offers created.",
+            report_id
+        )
+        return []
+
+    # Get approved NGOs only.
+    ngo_response = (
+        supabase.table("ngos")
+        .select("id, organisation_name")
+        .eq("verification_status", "approved")
+        .execute()
+    )
+
+    approved_ngos = ngo_response.data or []
+
+    if not approved_ngos:
+        logger.info("No approved NGOs available for matching.")
+        return []
+
+    ngo_ids = [ngo["id"] for ngo in approved_ngos]
+
+    # Get service areas belonging to approved NGOs.
+    areas_response = (
+        supabase.table("ngo_service_areas")
+        .select("id, ngo_id, area_name")
+        .in_("ngo_id", ngo_ids)
+        .execute()
+    )
+
+    service_areas = areas_response.data or []
+
+    # Identify NGOs with at least one matching service area.
+    matching_ngo_ids = set()
+
+    for area in service_areas:
+        if location_matches_service_area(
+            location_text,
+            area.get("area_name")
+        ):
+            matching_ngo_ids.add(area["ngo_id"])
+
+    if not matching_ngo_ids:
+        logger.info(
+            "No service-area matches for report %s at location %s.",
+            report_id,
+            location_text
+        )
+        return []
+
+    # Build one offer per matching NGO.
+    offers = [
+        {
+            "report_id": report_id,
+            "ngo_id": ngo_id,
+            "status": "offered",
+        }
+        for ngo_id in matching_ngo_ids
+    ]
+
+    # Upsert avoids creating duplicate report/NGO offers.
+    response = (
+        supabase.table("rescue_case_offers")
+        .upsert(
+            offers,
+            on_conflict="report_id,ngo_id",
+            ignore_duplicates=True
+        )
+        .execute()
+    )
+
+    logger.info(
+        "Created or checked offers for report %s. Matching NGOs: %s",
+        report_id,
+        len(matching_ngo_ids)
+    )
+
+    return response.data or []
+
+
+# -----------------------------
 # DISTANCE CALCULATION
 # -----------------------------
 
@@ -233,6 +344,29 @@ def save_report(report_data):
         ).execute()
 
         raise
+
+    # Create offers only after the report and its private
+    # metadata have been saved successfully.
+    #
+    # Possible duplicates are held back for human review.
+    if not possible_duplicate_id:
+        try:
+            create_case_offers(
+                report_id,
+                report_data["location_text"]
+            )
+        except Exception:
+            # Offer creation failure must not delete a valid report.
+            logger.exception(
+                "Automatic NGO offer creation failed for report %s.",
+                report_id
+            )
+    else:
+        logger.info(
+            "Report %s flagged as a possible duplicate. "
+            "Automatic offers skipped pending review.",
+            report_id
+        )
 
     return report_id
 

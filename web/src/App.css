@@ -663,3 +663,72 @@ tr:hover td {
     padding: 24px 18px;
   }
 }
+}
+
+/* NGO service area management */
+.service-area-form {
+  margin-top: 24px;
+}
+
+.service-area-form label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.service-area-input-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.service-area-input-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.service-area-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.service-area-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 18px;
+  background: #f1f5ef;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.service-area-item span {
+  font-weight: 600;
+  color: var(--forest);
+}
+
+.remove-area-button {
+  background: #fff0ed;
+  color: #b65f4f;
+  border: 0;
+  padding: 9px 13px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.remove-area-button:hover {
+  background: #ffe1da;
+}
+
+@media (max-width: 600px) {
+  .service-area-input-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .service-area-item {
+    align-items: flex-start;
+  }
+}

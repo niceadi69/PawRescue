@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
 import './App.css'
@@ -6,14 +7,25 @@ function App() {
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
   const [ngo, setNgo] = useState(null)
+
   const [pendingNGOs, setPendingNGOs] = useState([])
   const [assignedReports, setAssignedReports] = useState([])
+  const [availableOffers, setAvailableOffers] = useState([])
+
   const [reportsLoading, setReportsLoading] = useState(false)
+  const [offersLoading, setOffersLoading] = useState(false)
+  const [claimingOffer, setClaimingOffer] = useState(null)
+
+  const [serviceAreas, setServiceAreas] = useState([])
+  const [newArea, setNewArea] = useState('')
+  const [areasLoading, setAreasLoading] = useState(false)
+  const [areaSubmitting, setAreaSubmitting] = useState(false)
 
   const [mode, setMode] = useState('login')
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [reviewing, setReviewing] = useState(null)
+
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
@@ -80,6 +92,149 @@ function App() {
     setReportsLoading(false)
   }
 
+  // Load offers belonging to this NGO.
+  async function loadAvailableOffers(userId) {
+    setOffersLoading(true)
+
+    const { data, error } = await supabase
+      .from('rescue_case_offers')
+      .select(`
+        id,
+        status,
+        offered_at,
+        report:rescue_reports (
+          id,
+          animal_type,
+          description,
+          location_text,
+          urgency,
+          status,
+          created_at
+        )
+      `)
+      .eq('ngo_id', userId)
+      .eq('status', 'offered')
+      .order('offered_at', { ascending: false })
+
+    if (error) {
+      setError(`Could not load available cases: ${error.message}`)
+      setOffersLoading(false)
+      return
+    }
+
+    setAvailableOffers(
+      (data || []).filter(offer => offer.report)
+    )
+
+    setOffersLoading(false)
+  }
+
+  // Claim a case using the secure PostgreSQL function.
+  async function handleClaimOffer(offerId) {
+    setClaimingOffer(offerId)
+    setError('')
+    setMessage('')
+
+    const { data, error } = await supabase.rpc(
+      'claim_rescue_offer',
+      { p_offer_id: offerId }
+    )
+
+    if (error) {
+      setError(`Could not claim this case: ${error.message}`)
+      setClaimingOffer(null)
+
+      await loadAvailableOffers(session.user.id)
+      return
+    }
+
+    setMessage('Rescue case successfully claimed! Your organisation is now assigned.')
+
+    await Promise.all([
+      loadAvailableOffers(session.user.id),
+      loadAssignedReports(session.user.id),
+    ])
+
+    setClaimingOffer(null)
+  }
+
+  async function loadServiceAreas(userId) {
+    setAreasLoading(true)
+
+    const { data, error } = await supabase
+      .from('ngo_service_areas')
+      .select('id, area_name, created_at')
+      .eq('ngo_id', userId)
+      .order('area_name', { ascending: true })
+
+    if (error) {
+      setError(`Could not load service areas: ${error.message}`)
+      setAreasLoading(false)
+      return
+    }
+
+    setServiceAreas(data || [])
+    setAreasLoading(false)
+  }
+
+  async function handleAddArea(event) {
+    event.preventDefault()
+
+    const areaName = newArea.trim()
+
+    if (!areaName) {
+      setError('Please enter an area name.')
+      return
+    }
+
+    setAreaSubmitting(true)
+    setError('')
+    setMessage('')
+
+    const { error } = await supabase
+      .from('ngo_service_areas')
+      .insert({
+        ngo_id: session.user.id,
+        area_name: areaName,
+      })
+
+    if (error) {
+      setError(
+        error.code === '23505'
+          ? 'This service area has already been added.'
+          : `Could not add service area: ${error.message}`
+      )
+
+      setAreaSubmitting(false)
+      return
+    }
+
+    setNewArea('')
+    setMessage(`Added ${areaName} to your service areas.`)
+
+    await loadServiceAreas(session.user.id)
+    setAreaSubmitting(false)
+  }
+
+  async function handleRemoveArea(areaId) {
+    setError('')
+    setMessage('')
+
+    const { error } = await supabase
+      .from('ngo_service_areas')
+      .delete()
+      .eq('id', areaId)
+      .eq('ngo_id', session.user.id)
+
+    if (error) {
+      setError(`Could not remove service area: ${error.message}`)
+      return
+    }
+
+    setMessage('Service area removed.')
+    await loadServiceAreas(session.user.id)
+  }
+
   async function loadProfile(user) {
     const { data, error } = await supabase
       .from('profiles')
@@ -138,7 +293,11 @@ function App() {
     }
 
     if (data.role === 'ngo') {
-      await loadAssignedReports(user.id)
+      await Promise.all([
+        loadAssignedReports(user.id),
+        loadAvailableOffers(user.id),
+        loadServiceAreas(user.id),
+      ])
     }
   }
 
@@ -166,6 +325,8 @@ function App() {
           setNgo(null)
           setPendingNGOs([])
           setAssignedReports([])
+          setAvailableOffers([])
+          setServiceAreas([])
           setError('')
           setMessage('')
         }
@@ -186,6 +347,8 @@ function App() {
       setNgo(null)
       setPendingNGOs([])
       setAssignedReports([])
+      setAvailableOffers([])
+      setServiceAreas([])
     }
   }, [session])
 
@@ -296,6 +459,8 @@ function App() {
     setNgo(null)
     setPendingNGOs([])
     setAssignedReports([])
+    setAvailableOffers([])
+    setServiceAreas([])
     setMessage('')
     setError('')
   }
@@ -352,15 +517,10 @@ function App() {
                 <p>Review organisations requesting access.</p>
               </div>
 
-              <span className="count">
-                {pendingNGOs.length} pending
-              </span>
+              <span className="count">{pendingNGOs.length} pending</span>
             </div>
 
-            <button
-              className="secondary-button"
-              onClick={loadPendingNGOs}
-            >
+            <button className="secondary-button" onClick={loadPendingNGOs}>
               Refresh applications
             </button>
 
@@ -416,6 +576,161 @@ function App() {
               <p>Your organisation account is active.</p>
             </section>
 
+            {/* SERVICE AREAS */}
+            <section className="panel">
+              <div className="panel-header">
+                <div>
+                  <h2>📍 Your Service Areas</h2>
+                  <p>
+                    Add the neighbourhoods, cities or districts your
+                    organisation can respond to.
+                  </p>
+                </div>
+
+                <span className="count">{serviceAreas.length} areas</span>
+              </div>
+
+              <form onSubmit={handleAddArea} className="service-area-form">
+                <label htmlFor="service-area">Add an area</label>
+
+                <div className="service-area-input-row">
+                  <input
+                    id="service-area"
+                    type="text"
+                    value={newArea}
+                    onChange={e => setNewArea(e.target.value)}
+                    placeholder="e.g. Patiala, Urban Estate"
+                    maxLength={100}
+                    required
+                  />
+
+                  <button
+                    type="submit"
+                    className="primary-button"
+                    disabled={areaSubmitting}
+                  >
+                    {areaSubmitting ? 'Adding...' : 'Add area'}
+                  </button>
+                </div>
+              </form>
+
+              {areasLoading ? (
+                <div className="empty-state">Loading service areas...</div>
+              ) : serviceAreas.length === 0 ? (
+                <div className="empty-state">
+                  <h3>No service areas added</h3>
+                  <p>
+                    Add the areas your NGO serves. These will help PawRescue
+                    send relevant rescue cases to your organisation.
+                  </p>
+                </div>
+              ) : (
+                <div className="service-area-list">
+                  {serviceAreas.map(area => (
+                    <div className="service-area-item" key={area.id}>
+                      <span>📍 {area.area_name}</span>
+
+                      <button
+                        type="button"
+                        className="remove-area-button"
+                        onClick={() => handleRemoveArea(area.id)}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* AVAILABLE RESCUE CASES */}
+            <section className="panel">
+              <div className="panel-header">
+                <div>
+                  <h2>🚨 Available Rescue Cases</h2>
+                  <p>
+                    Rescue cases offered to your organisation. The first
+                    approved NGO to claim a case gets the assignment.
+                  </p>
+                </div>
+
+                <span className="count">
+                  {availableOffers.length} available
+                </span>
+              </div>
+
+              <button
+                className="secondary-button"
+                onClick={() => loadAvailableOffers(session.user.id)}
+                disabled={offersLoading}
+              >
+                {offersLoading ? 'Refreshing...' : 'Refresh available cases'}
+              </button>
+
+              {offersLoading ? (
+                <div className="empty-state">
+                  Loading available cases...
+                </div>
+              ) : availableOffers.length === 0 ? (
+                <div className="empty-state">
+                  <h3>No available cases right now</h3>
+                  <p>
+                    When a rescue case is offered to your organisation,
+                    it will appear here.
+                  </p>
+                </div>
+              ) : (
+                <div className="report-list">
+                  {availableOffers.map(offer => (
+                    <article className="report-card" key={offer.id}>
+                      <div className="panel-header">
+                        <h3>
+                          🐾 {offer.report.animal_type || 'Animal report'}
+                        </h3>
+
+                        <span className={`urgency-badge ${(
+                          offer.report.urgency || 'unknown'
+                        ).toLowerCase()}`}>
+                          {offer.report.urgency || 'Unknown urgency'}
+                        </span>
+                      </div>
+
+                      <p>
+                        {offer.report.description || 'No description provided.'}
+                      </p>
+
+                      <div className="report-meta">
+                        <span>
+                          <strong>Location:</strong>{' '}
+                          {offer.report.location_text || 'Not provided'}
+                        </span>
+
+                        <span>
+                          <strong>Report status:</strong>{' '}
+                          {offer.report.status || 'Unknown'}
+                        </span>
+                      </div>
+
+                      <p className="small-text">
+                        Offered: {new Date(offer.offered_at).toLocaleString()}
+                      </p>
+
+                      <button
+                        className="approve-button"
+                        disabled={claimingOffer !== null}
+                        onClick={() => handleClaimOffer(offer.id)}
+                      >
+                        {claimingOffer === offer.id
+                          ? 'Claiming case...'
+                          : 'Accept Case'}
+                      </button>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* ASSIGNED RESCUE REPORTS */}
             <section className="panel">
               <div className="panel-header">
                 <div>
@@ -431,8 +746,9 @@ function App() {
               <button
                 className="secondary-button"
                 onClick={() => loadAssignedReports(session.user.id)}
+                disabled={reportsLoading}
               >
-                Refresh reports
+                {reportsLoading ? 'Refreshing...' : 'Refresh reports'}
               </button>
 
               {reportsLoading ? (
@@ -443,8 +759,7 @@ function App() {
                 <div className="empty-state">
                   <h3>No assigned reports yet</h3>
                   <p>
-                    New rescue assignments will appear here when an
-                    administrator assigns a case to your organisation.
+                    Cases your organisation accepts will appear here.
                   </p>
                 </div>
               ) : (
@@ -463,7 +778,9 @@ function App() {
                         </span>
                       </div>
 
-                      <p>{item.report.description || 'No description provided.'}</p>
+                      <p>
+                        {item.report.description || 'No description provided.'}
+                      </p>
 
                       <div className="report-meta">
                         <span>
@@ -634,4 +951,4 @@ function App() {
   )
 }
 
-export default App;
+export default App
