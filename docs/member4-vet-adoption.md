@@ -33,9 +33,10 @@ Run it like the dashboard: `cd web`, `npm install`, `npm run dev`.
    ```
 
    If vets need approval in your setup (like NGOs), mark this one approved too.
-3. **Assign the vet to a report** (admin-only, so do it here or from the NGO
-   dashboard once it supports assignment). Copy a report's `id` from the
-   `rescue_reports` table:
+3. **Assign the vet to a report** (admin-only). Easiest: sign in to
+   `/vet.html` with an **admin** account. Admins see every report; open one
+   and pick the vet under **Vet assignment**. Or do it in SQL with a report's
+   `id` from the `rescue_reports` table:
 
    ```sql
    insert into public.rescue_assignments (report_id, veterinarian_id, assignment_status)
@@ -48,14 +49,17 @@ Run it like the dashboard: `cd web`, `npm install`, `npm run dev`.
 
 ## Demo flow
 
-1. Vet signs in at `/vet.html`, opens the assigned case, sees the photo and AI
-   triage, and saves an exam record. The NGO can read the history.
-2. Vet saves a later record with status **Cleared for adoption**.
-3. Admin/NGO opens `/adoption-desk.html`: the animal appears under
+1. Admin signs in at `/vet.html`, opens the new Telegram report and assigns
+   it to the vet.
+2. Vet signs in at `/vet.html` (another browser or an incognito window),
+   opens the case, sees the photo and AI triage, and saves an exam record.
+   The NGO can read the history.
+3. Vet saves a later record with status **Cleared for adoption**.
+4. Admin/NGO opens `/adoption-desk.html`: the animal appears under
    **Ready to list**. Fill in a name and publish (the rescue photo is copied to
    the public bucket; nothing private is published).
-4. Anyone opens `/adopt.html`, meets the animal and applies.
-5. The application appears on the adoption desk. Approve it and the animal is
+5. Anyone opens `/adopt.html`, meets the animal and applies.
+6. The application appears on the adoption desk. Approve it and the animal is
    marked **Adopted**.
 
 ## Notes for the team

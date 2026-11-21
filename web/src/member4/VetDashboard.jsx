@@ -115,6 +115,7 @@ export default function VetDashboard({ session, profile }) {
   );
   const visible = cases.filter((caseItem) => caseItem.stage === tab);
   const openCase = cases.find((caseItem) => caseItem.id === openId) || null;
+  const isAdmin = profile.role === "admin";
 
   return (
     <div className="m4-page">
@@ -123,10 +124,11 @@ export default function VetDashboard({ session, profile }) {
       <main className="m4-main">
         <div className="m4-heading">
           <div>
-            <h1>Assigned rescue cases</h1>
+            <h1>{isAdmin ? "All rescue reports" : "Assigned rescue cases"}</h1>
             <p className="m4-muted">
-              Cases the NGO has assigned to you. Record each exam so the NGO
-              can follow the animal's recovery.
+              {isAdmin
+                ? "You're an admin, so you see every report. Open one to assign it to a vet."
+                : "Cases the NGO has assigned to you. Record each exam so the NGO can follow the animal's recovery."}
             </p>
           </div>
         </div>
@@ -200,6 +202,7 @@ export default function VetDashboard({ session, profile }) {
           key={openCase.id}
           caseItem={openCase}
           vetId={session.user.id}
+          isAdmin={isAdmin}
           onClose={() => setOpenId(null)}
           onSaved={load}
         />
@@ -208,7 +211,7 @@ export default function VetDashboard({ session, profile }) {
   );
 }
 
-function CaseDetail({ caseItem, vetId, onClose, onSaved }) {
+function CaseDetail({ caseItem, vetId, isAdmin, onClose, onSaved }) {
   const [photos, setPhotos] = useState([]);
   const [records, setRecords] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -309,6 +312,8 @@ function CaseDetail({ caseItem, vetId, onClose, onSaved }) {
         <p className="m4-muted">
           📍 {caseItem.location} · Reported {formatDate(caseItem.reportedAt)}
         </p>
+
+        {isAdmin && <AssignVet reportId={caseItem.id} adminId={vetId} />}
 
         {photos.length > 0 && (
           <div className="m4-photos">
@@ -450,6 +455,117 @@ function CaseDetail({ caseItem, vetId, onClose, onSaved }) {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+// Admins can send a report to a vet's desk (assignments are admin-only)
+function AssignVet({ reportId, adminId }) {
+  const [vets, setVets] = useState([]);
+  const [current, setCurrent] = useState([]);
+  const [choice, setChoice] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  const load = useCallback(async () => {
+    const [vetsResult, assignmentsResult] = await Promise.all([
+      supabase.from("veterinarians").select("id, clinic_name, profiles(full_name)"),
+      supabase
+        .from("rescue_assignments")
+        .select("id, veterinarian_id, assignment_status")
+        .eq("report_id", reportId)
+        .not("veterinarian_id", "is", null)
+        .neq("assignment_status", "cancelled"),
+    ]);
+
+    const failed = vetsResult.error || assignmentsResult.error;
+    if (failed) {
+      setError(failed.message);
+      return;
+    }
+
+    setVets(vetsResult.data);
+    setCurrent(assignmentsResult.data);
+  }, [reportId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const vetName = (id) => {
+    const vet = vets.find((item) => item.id === id);
+    const person = Array.isArray(vet?.profiles) ? vet.profiles[0] : vet?.profiles;
+    return person?.full_name || vet?.clinic_name || "A vet";
+  };
+
+  const assign = async () => {
+    if (!choice) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+
+    const { error: insertError } = await supabase
+      .from("rescue_assignments")
+      .insert({
+        report_id: reportId,
+        veterinarian_id: choice,
+        assigned_by: adminId,
+        assignment_status: "assigned",
+      });
+
+    setBusy(false);
+
+    if (insertError) {
+      setError(insertError.message);
+      return;
+    }
+
+    setNotice(`Assigned to ${vetName(choice)}. It's on their vet desk now.`);
+    setChoice("");
+    load();
+  };
+
+  return (
+    <div className="m4-assign">
+      <h3>Vet assignment</h3>
+      {current.length > 0 ? (
+        <p>
+          Assigned to{" "}
+          {current.map((item) => vetName(item.veterinarian_id)).join(", ")}
+        </p>
+      ) : (
+        <p className="m4-muted">No vet assigned yet.</p>
+      )}
+
+      <div className="m4-assign-row">
+        <select value={choice} onChange={(event) => setChoice(event.target.value)}>
+          <option value="">Choose a vet</option>
+          {vets.map((vet) => (
+            <option key={vet.id} value={vet.id}>
+              {vetName(vet.id)}
+              {vet.clinic_name ? ` · ${vet.clinic_name}` : ""}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className="m4-button"
+          onClick={assign}
+          disabled={!choice || busy}
+        >
+          {busy ? "Assigning…" : "Assign"}
+        </button>
+      </div>
+
+      {vets.length === 0 && !error && (
+        <p className="m4-muted">
+          No vet accounts yet. Create one first (see
+          docs/member4-vet-adoption.md).
+        </p>
+      )}
+      {error && <p className="m4-error">{error}</p>}
+      {notice && <p className="m4-success">{notice}</p>}
     </div>
   );
 }

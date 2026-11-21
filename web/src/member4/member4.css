@@ -465,6 +465,32 @@ textarea {
   color: #2F5E38;
 }
 
+.m4-assign {
+  margin: 16px 0;
+  padding: 14px 16px;
+  border: 1px solid var(--m4-beige);
+  border-radius: 12px;
+}
+
+.m4-assign p {
+  margin: 6px 0;
+  font-size: 14px;
+}
+
+.m4-assign-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.m4-assign-row select {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--m4-beige);
+  border-radius: 10px;
+  background: #FFFFFF;
+}
+
 .m4-form {
   display: grid;
   gap: 12px;
