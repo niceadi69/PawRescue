@@ -663,3 +663,28 @@ textarea {
 .dn-nav .m4-brand span {
   color: #a8d5b5;
 }
+
+/* "Back to homepage" on the vet desk and adoption desk */
+.m4-back {
+  justify-self: start;
+  color: var(--m4-brown);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.m4-back:hover {
+  color: var(--m4-dark);
+  text-decoration: underline;
+}
+
+.m4-brand-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+@media (max-width: 640px) {
+  .m4-topbar-user .m4-back {
+    display: none;
+  }
+}

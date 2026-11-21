@@ -2,6 +2,16 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 
+const HOME = import.meta.env.BASE_URL;
+
+function BackHome() {
+  return (
+    <a className="m4-back" href={HOME}>
+      ← Back to homepage
+    </a>
+  );
+}
+
 const ROLE_LABELS = {
   veterinarian: "vets",
   ngo: "NGO staff",
@@ -80,6 +90,7 @@ export default function StaffGate({ title, allowedRoles, children }) {
     return (
       <div className="m4-center">
         <div className="m4-card m4-auth">
+          <BackHome />
           <div className="m4-brand">
             🐾 Paw<span>Rescue</span>
           </div>
@@ -129,6 +140,7 @@ function LoginForm({ title }) {
   return (
     <div className="m4-center">
       <form className="m4-card m4-auth" onSubmit={handleSubmit}>
+        <BackHome />
         <div className="m4-brand">
           🐾 Paw<span>Rescue</span>
         </div>
@@ -171,10 +183,13 @@ export function TopBar({ title, profile, session }) {
   return (
     <header className="m4-topbar">
       <div className="m4-brand">
-        🐾 Paw<span>Rescue</span>
+        <a className="m4-brand-link" href={HOME} title="Back to homepage">
+          🐾 Paw<span>Rescue</span>
+        </a>
         <span className="m4-topbar-title">{title}</span>
       </div>
       <div className="m4-topbar-user">
+        <BackHome />
         <span>{profile.full_name || session.user.email}</span>
         <button
           className="m4-button m4-button-quiet"
