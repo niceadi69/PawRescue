@@ -97,3 +97,17 @@ Reports go to `public.cruelty_reports` and photos to the private
 `cruelty-evidence` bucket (section 5 of `supabase/member4_vet_adoption.sql`).
 Anyone can file a report; only admins can read or update reports and photos.
 For now, admins review them in the Supabase table editor.
+
+## Automatic vet assignment
+
+Run `supabase/auto_assign_vet.sql` once in the Supabase SQL Editor (after
+`member4_vet_adoption.sql`). From then on:
+
+- When an NGO accepts a case (or an admin assigns an NGO), the approved vet with
+  the fewest open cases is added to that same assignment. Ties go to the vet who
+  was assigned least recently.
+- The vet is added to the NGO's own assignment row, so NGO offers and
+  `claim_rescue_offer` behave exactly as before.
+- If there are no approved vets yet, the case waits; it is handed out as soon as
+  an admin approves a vet. Running the file also hands out any waiting cases.
+- Admins can still add a vet or NGO by hand from the vet desk.

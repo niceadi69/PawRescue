@@ -550,6 +550,10 @@ function AssignCase({ reportId, adminId }) {
   return (
     <div className="m4-assign">
       <h3>Assignments</h3>
+      <p className="m4-muted">
+        A vet is assigned automatically as soon as an NGO takes the case.
+        Use these only to add someone by hand.
+      </p>
       <p className={assignedNgos.length > 0 ? "" : "m4-muted"}>
         NGO: {assignedNgos.length > 0 ? assignedNgos.join(", ") : "not assigned yet"}
       </p>

@@ -28,7 +28,18 @@ The site is a static Vite build in `web/`.
    **Netlify:** set **Base directory** to `web`; `web/netlify.toml` sets the rest.
 3. In Supabase → Authentication → URL Configuration, add the deployed URL as the
    Site URL so sign-up confirmation emails link back to it.
-4. Run the SQL in `supabase/` once (SQL Editor) if it hasn't been run on this project.
+4. Run the SQL in `supabase/` once (SQL Editor) if it hasn't been run on this project,
+   in this order: `schema.sql`, `member4_vet_adoption.sql`, `auto_assign_vet.sql`.
+
+## How cases flow
+
+1. Someone reports an injured animal to the Telegram bot; the AI triages it.
+2. NGOs whose service areas match get the case offered and one presses **Accept Case**.
+3. **A vet is assigned automatically** to that case: the approved vet with the fewest
+   open cases (`supabase/auto_assign_vet.sql`). NGO matching is unchanged.
+4. The vet records treatment in the vet desk; the NGO sees the progress on its dashboard.
+5. Once the vet clears the animal for adoption, staff list it from the adoption desk and it
+   appears on the public adoption page.
 
 Local check: `cd web && npm install && npm run build && npm run preview`.
 
