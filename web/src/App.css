@@ -437,7 +437,6 @@ tr:hover td {
   .panel {
     padding: 19px;
   }
-}
 
 @media (prefers-reduced-motion: reduce) {
   *,
