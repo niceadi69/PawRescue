@@ -1,6 +1,7 @@
 
 import os
 import logging
+from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -23,13 +24,15 @@ from telegram.ext import (
 )
 
 from notifier import notify_ngo
+from db import save_report, upload_report_photo
 
 
 # -----------------------------
 # CONFIGURATION
 # -----------------------------
 
-load_dotenv()
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+load_dotenv(PROJECT_ROOT / ".env")
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
@@ -128,20 +131,34 @@ async def get_description(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # GET LOCATION
 # -----------------------------
 
+
 async def get_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    report_data = context.user_data["report"]
 
     if update.message.location:
 
         latitude = update.message.location.latitude
         longitude = update.message.location.longitude
 
-        context.user_data["report"]["location"] = (
-            f"Latitude: {latitude}, Longitude: {longitude}"
+        report_data["latitude"] = latitude
+        report_data["longitude"] = longitude
+
+        report_data["location_text"] = "GPS location shared via Telegram"
+
+        report_data["location"] = (
+            f"GPS coordinates: {latitude}, {longitude}"
         )
 
     else:
 
-        context.user_data["report"]["location"] = update.message.text
+        location = update.message.text.strip()
+
+        report_data["location"] = location
+        report_data["location_text"] = location
+
+        report_data["latitude"] = None
+        report_data["longitude"] = None
 
     await update.message.reply_text(
         "📸 Please send photos of the animal.\n\n"
@@ -153,6 +170,7 @@ async def get_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return PHOTO
 
 
+
 # -----------------------------
 # GET MULTIPLE PHOTOS
 # -----------------------------
@@ -161,36 +179,38 @@ async def get_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     photos = context.user_data.setdefault("photos", [])
 
-    # FINISH PHOTO UPLOAD
+    # FINISH PHOTO COLLECTION
 
-    if update.message.text and update.message.text.lower() == "/done":
+    if update.message.text:
 
-        if not photos:
+        command = update.message.text.lower().strip()
+
+        if command == "/done":
+
+            if not photos:
+
+                await update.message.reply_text(
+                    "You haven't sent any photos yet.\n"
+                    "Send a photo or type /skip."
+                )
+
+                return PHOTO
 
             await update.message.reply_text(
-                "You haven't sent any photos yet.\n"
-                "Send a photo or type /skip."
+                f"✅ {len(photos)} photo(s) received!\n\n"
+                "📞 Please enter your phone number."
             )
 
-            return PHOTO
+            return PHONE
 
-        await update.message.reply_text(
-            f"✅ {len(photos)} photo(s) received!\n\n"
-            "📞 Please enter your phone number."
-        )
+        if command == "/skip":
 
-        return PHONE
+            await update.message.reply_text(
+                "No problem!\n"
+                "📞 Please enter your phone number."
+            )
 
-    # SKIP PHOTOS
-
-    if update.message.text and update.message.text.lower() == "/skip":
-
-        await update.message.reply_text(
-            "No problem!\n"
-            "📞 Please enter your phone number."
-        )
-
-        return PHONE
+            return PHONE
 
     # RECEIVE PHOTO
 
@@ -230,6 +250,7 @@ async def get_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return PHOTO
 
 
+
 # -----------------------------
 # GET PHONE AND SUBMIT REPORT
 # -----------------------------
@@ -238,52 +259,121 @@ async def get_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     report_data = context.user_data["report"]
 
-    report_data["phone"] = update.message.text
-
+    report_data["phone"] = update.message.text.strip()
     report_data["photos"] = context.user_data.get("photos", [])
-
     report_data["telegram_user_id"] = str(update.effective_user.id)
 
     photo_count = len(report_data["photos"])
+    uploaded_photos = []
+    failed_photos = []
 
-    # SEND REPORT TO NGO NOTIFIER
+    # STEP 1: SAVE REPORT TO SUPABASE
 
     try:
+
+        report_id = save_report(report_data)
+
+        logger.info("Report saved successfully: %s", report_id)
+
+    except Exception:
+
+        logger.exception("Failed to save report to Supabase")
+
+        await update.message.reply_text(
+            "⚠️ We couldn't save your report. Please try again later."
+        )
+
+        return ConversationHandler.END
+
+    # STEP 2: DOWNLOAD AND UPLOAD PHOTOS
+
+    for index, photo_id in enumerate(report_data["photos"], start=1):
+
+        try:
+
+            # Download photo from Telegram
+
+            telegram_file = await context.bot.get_file(photo_id)
+
+            photo_bytes = await telegram_file.download_as_bytearray()
+
+            # Upload photo to Supabase Storage
+
+            storage_path = upload_report_photo(
+                report_id=report_id,
+                photo_bytes=bytes(photo_bytes),
+                mime_type="image/jpeg",
+                extension="jpg",
+            )
+
+            uploaded_photos.append(storage_path)
+
+            logger.info(
+                "Photo %s uploaded successfully: %s",
+                index,
+                storage_path
+            )
+
+        except Exception:
+
+            failed_photos.append(index)
+
+            logger.exception(
+                "Failed to upload photo %s for report %s",
+                index,
+                report_id
+            )
+
+    # STEP 3: NOTIFY NGO
+
+    notification_success = True
+
+    try:
+
+        report_data["uploaded_photos"] = uploaded_photos
 
         await notify_ngo(report_data)
 
     except Exception:
 
-        logger.exception("Failed to notify NGO")
+        notification_success = False
 
-        await update.message.reply_text(
-            "⚠️ Your report was collected, but notification failed. "
-            "Please contact the rescue team."
+        logger.exception("NGO notification failed")
+
+    # STEP 4: BUILD CONFIRMATION
+
+    confirmation = (
+        "✅ Rescue report saved successfully!\n\n"
+        f"🆔 Report ID: {report_id}\n"
+        f"🐾 Animal: {report_data['animal']}\n"
+        f"📝 Description: {report_data['description']}\n"
+        f"📍 Location: {report_data['location']}\n"
+        f"📸 Photos uploaded: {len(uploaded_photos)}/{photo_count}\n"
+        "Thank you for helping an animal in need! ❤️"
+    )
+
+    if failed_photos:
+
+        confirmation += (
+            "\n\n⚠️ Some photos could not be uploaded. "
+            "Your rescue report was still saved."
         )
 
-        return ConversationHandler.END
+    if not notification_success:
 
-    # CONFIRMATION MESSAGE
+        confirmation += (
+            "\n\n⚠️ NGO notification failed, "
+            "but your report was safely saved."
+        )
+
+    # STEP 5: SEND CONFIRMATION
 
     await update.message.reply_text(
-        "✅ Rescue report collected successfully!\n\n"
-
-        f"🐾 Animal: {report_data['animal']}\n"
-
-        f"📝 Description: {report_data['description']}\n"
-
-        f"📍 Location: {report_data['location']}\n"
-
-        f"📸 Photos: {photo_count}/5 received\n"
-
-        f"📞 Contact: {report_data['phone']}\n\n"
-
-        "Thank you for helping an animal in need! ❤️",
-
+        confirmation,
         reply_markup=ReplyKeyboardRemove(),
     )
 
-    # CLEAR REPORT DATA
+    # STEP 6: CLEAR REPORT DATA
 
     context.user_data.pop("report", None)
     context.user_data.pop("photos", None)
@@ -303,7 +393,6 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "❌ Report cancelled.\n"
         "You can start again using /report.",
-
         reply_markup=ReplyKeyboardRemove(),
     )
 
@@ -319,7 +408,7 @@ def main():
     if not TOKEN:
 
         raise ValueError(
-            "Telegram token missing from .env file!"
+            "Telegram bot token missing from .env file!"
         )
 
     request = HTTPXRequest(
@@ -360,16 +449,21 @@ def main():
 
             LOCATION: [
                 MessageHandler(
-                    filters.TEXT | filters.LOCATION,
+                    filters.LOCATION |
+                    (filters.TEXT & ~filters.COMMAND),
                     get_location
                 )
             ],
 
             PHOTO: [
                 MessageHandler(
-                    filters.PHOTO | filters.TEXT,
+                    filters.PHOTO,
                     get_photo
-                )
+                ),
+                MessageHandler(
+                    filters.Regex(r"^/(done|skip)$"),
+                    get_photo
+                ),
             ],
 
             PHONE: [
@@ -388,7 +482,6 @@ def main():
     )
 
     app.add_handler(CommandHandler("start", start))
-
     app.add_handler(report_handler)
 
     print("🐾 PawRescue bot is running!")
