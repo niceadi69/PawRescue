@@ -3,6 +3,85 @@ import { useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
 import './App.css'
 
+function TriageDetails({ report }) {
+  const analysis = report?.ai_analysis
+
+  if (report?.ai_status !== 'completed' || !analysis) {
+    return (
+      <div className="triage-panel">
+        <h4>🤖 AI Triage</h4>
+        <p>
+          AI analysis unavailable. Manual human assessment required.
+        </p>
+      </div>
+    )
+  }
+
+  const confidence = Math.round(
+    (Number(analysis.confidence) || 0) * 100
+  )
+
+  return (
+    <div className="triage-panel">
+      <div className="triage-heading">
+        <h4>🤖 AI Triage Analysis</h4>
+        <span className="triage-confidence">
+          {confidence}% confidence
+        </span>
+      </div>
+
+      <div className="triage-meta">
+        <span>
+          <strong>Severity:</strong>{' '}
+          {report.severity || analysis.severity || 'Unknown'}
+        </span>
+
+        <span>
+          <strong>Urgency:</strong>{' '}
+          {report.urgency || analysis.urgency || 'Unknown'}
+        </span>
+      </div>
+
+      <div className="triage-section">
+        <strong>Visible concerns</strong>
+
+        {analysis.visible_concerns?.length > 0 ? (
+          <ul>
+            {analysis.visible_concerns.map((concern, index) => (
+              <li key={index}>{concern}</li>
+            ))}
+          </ul>
+        ) : (
+          <p>No specific concerns identified by AI.</p>
+        )}
+      </div>
+
+      <div className="triage-section">
+        <strong>Recommended action</strong>
+        <p>
+          {analysis.recommended_action || 'Human assessment required.'}
+        </p>
+      </div>
+
+      {analysis.uncertainties?.length > 0 && (
+        <div className="triage-section">
+          <strong>Uncertainties</strong>
+          <ul>
+            {analysis.uncertainties.map((item, index) => (
+              <li key={index}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="human-review-warning">
+        ⚠️ AI triage is advisory, not a veterinary diagnosis.
+        Human review is required.
+      </div>
+    </div>
+  )
+}
+
 function App() {
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
@@ -74,7 +153,18 @@ function App() {
 
     const { data: reports, error: reportError } = await supabase
       .from('rescue_reports')
-      .select('id, animal_type, description, location_text, urgency, status, created_at')
+      .select(`
+        id,
+        animal_type,
+        description,
+        location_text,
+        urgency,
+        severity,
+        ai_analysis,
+        ai_status,
+        status,
+        created_at
+      `)
       .in('id', reportIds)
 
     if (reportError) {
@@ -108,6 +198,9 @@ function App() {
           description,
           location_text,
           urgency,
+          severity,
+          ai_analysis,
+          ai_status,
           status,
           created_at
         )
@@ -135,7 +228,7 @@ function App() {
     setError('')
     setMessage('')
 
-    const { data, error } = await supabase.rpc(
+    const { error } = await supabase.rpc(
       'claim_rescue_offer',
       { p_offer_id: offerId }
     )
@@ -148,7 +241,9 @@ function App() {
       return
     }
 
-    setMessage('Rescue case successfully claimed! Your organisation is now assigned.')
+    setMessage(
+      'Rescue case successfully claimed! Your organisation is now assigned.'
+    )
 
     await Promise.all([
       loadAvailableOffers(session.user.id),
@@ -390,7 +485,9 @@ function App() {
     if (error) {
       setError(error.message)
     } else if (data.session) {
-      setMessage('Account created! Your NGO registration is pending approval.')
+      setMessage(
+        'Account created! Your NGO registration is pending approval.'
+      )
     } else {
       setMessage(
         'Account created! Confirm your email, then sign in to complete registration.'
@@ -699,6 +796,8 @@ function App() {
                         {offer.report.description || 'No description provided.'}
                       </p>
 
+                      <TriageDetails report={offer.report} />
+
                       <div className="report-meta">
                         <span>
                           <strong>Location:</strong>{' '}
@@ -781,6 +880,8 @@ function App() {
                       <p>
                         {item.report.description || 'No description provided.'}
                       </p>
+
+                      <TriageDetails report={item.report} />
 
                       <div className="report-meta">
                         <span>

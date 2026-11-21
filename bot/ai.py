@@ -5,8 +5,7 @@ import asyncio
 from pathlib import Path
 
 from dotenv import load_dotenv
-from google import genai
-from google.genai import types
+from groq import AsyncGroq
 
 
 # -----------------------------
@@ -17,25 +16,25 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 load_dotenv(PROJECT_ROOT / ".env")
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 MODEL_NAME = os.getenv(
-    "GEMINI_MODEL",
-    "gemini-3.8-flash"
+    "GROQ_MODEL",
+    "openai/gpt-oss-20b"
 )
 
-if not GEMINI_API_KEY:
+if not GROQ_API_KEY:
     raise ValueError(
-        "Gemini API key missing. Check your .env file."
+        "Groq API key missing. Check your .env file."
     )
 
 
 # -----------------------------
-# GEMINI CLIENT
+# GROQ CLIENT
 # -----------------------------
 
-client = genai.Client(
-    api_key=GEMINI_API_KEY
+client = AsyncGroq(
+    api_key=GROQ_API_KEY
 )
 
 
@@ -46,7 +45,7 @@ client = genai.Client(
 async def analyze_report(report_data):
 
     """
-    Analyze a rescue report using Gemini.
+    Analyze a rescue report using Groq.
 
     Returns structured AI triage information.
     This is not a veterinary diagnosis.
@@ -59,21 +58,15 @@ async def analyze_report(report_data):
         "No description provided."
     )
 
-    prompt = f"""
+    system_prompt = """
 You are an AI assistant helping an animal rescue
 organization prioritize incoming rescue reports.
 
-Analyze the following report.
+Analyze reports carefully and return ONLY valid JSON.
 
-Animal:
-{animal}
+The JSON must contain these fields:
 
-Reported situation:
-{description}
-
-Return ONLY valid JSON with these fields:
-
-{{
+{
     "animal_type": "string",
     "urgency": "low, medium, high, critical, or unknown",
     "severity": "low, moderate, high, critical, or unknown",
@@ -82,7 +75,7 @@ Return ONLY valid JSON with these fields:
     "recommended_action": "string",
     "requires_human_review": true,
     "uncertainties": []
-}}
+}
 
 IMPORTANT RULES:
 
@@ -97,8 +90,16 @@ IMPORTANT RULES:
 9. Confidence must be between 0 and 1.
 """
 
+    user_prompt = f"""
+Animal:
+{animal}
+
+Reported situation:
+{description}
+"""
+
     # -----------------------------
-    # GEMINI REQUEST WITH RETRIES
+    # GROQ REQUEST WITH RETRIES
     # -----------------------------
 
     response = None
@@ -107,19 +108,28 @@ IMPORTANT RULES:
 
         try:
             print(
-                f"Gemini request: attempt {attempt + 1}/3",
+                f"Groq request: attempt {attempt + 1}/3",
                 flush=True
             )
 
             response = await asyncio.wait_for(
-                client.aio.models.generate_content(
+                client.chat.completions.create(
                     model=MODEL_NAME,
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        response_mime_type="application/json",
-                        temperature=0.2,
-                        max_output_tokens=700,
-                    ),
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": system_prompt
+                        },
+                        {
+                            "role": "user",
+                            "content": user_prompt
+                        }
+                    ],
+                    response_format={
+                        "type": "json_object"
+                    },
+                    temperature=0.2,
+                    max_tokens=700,
                 ),
                 timeout=30
             )
@@ -132,21 +142,26 @@ IMPORTANT RULES:
                 raise
 
             print(
-                f"Gemini temporarily unavailable: {error}",
+                f"Groq temporarily unavailable: {error}",
                 flush=True
             )
 
             await asyncio.sleep(2 ** (attempt + 1))
 
-    if response is None or not response.text:
-        raise ValueError("Gemini returned an empty response.")
+    if response is None:
+        raise ValueError("Groq returned no response.")
+
+    content = response.choices[0].message.content
+
+    if not content:
+        raise ValueError("Groq returned an empty response.")
 
     try:
-        result = json.loads(response.text)
+        result = json.loads(content)
 
     except json.JSONDecodeError as error:
         raise ValueError(
-            "Gemini returned invalid JSON."
+            "Groq returned invalid JSON."
         ) from error
 
     # -----------------------------
@@ -172,7 +187,10 @@ IMPORTANT RULES:
     except (TypeError, ValueError):
         confidence = 0.0
 
-    result["confidence"] = max(0.0, min(1.0, confidence))
+    result["confidence"] = max(
+        0.0,
+        min(1.0, confidence)
+    )
 
     result["animal_type"] = str(
         result.get("animal_type", animal)
@@ -191,7 +209,10 @@ IMPORTANT RULES:
     )
 
     result["recommended_action"] = str(
-        result.get("recommended_action", "Human review required.")
+        result.get(
+            "recommended_action",
+            "Human review required."
+        )
     )
 
     # Human review is mandatory for every report.
