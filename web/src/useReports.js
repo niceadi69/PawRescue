@@ -17,7 +17,7 @@ export const STATUS_LABELS = {
   rescued: "Rescued",
   closed: "Closed",
   cancelled: "Cancelled",
-  duplicate: "Duplicate",
+  duplicate: "Possible Duplicate",
 };
 
 export const STATUS_OPTIONS = Object.entries(STATUS_LABELS).map(
@@ -166,12 +166,18 @@ export function useReports() {
     async (uuid, status) => {
       if (!supabase) return "Supabase is not connected.";
 
-      const { error: updateError } = await supabase
+      const { data: updated, error: updateError } = await supabase
         .from("rescue_reports")
         .update({ status, updated_at: new Date().toISOString() })
-        .eq("id", uuid);
+        .eq("id", uuid)
+        .select("id");
 
       if (updateError) return updateError.message;
+
+      // Row Level Security silently skips rows the user can't edit
+      if (!updated || updated.length === 0) {
+        return "Your account isn't allowed to change this report's status yet.";
+      }
 
       await refresh();
       return null;
