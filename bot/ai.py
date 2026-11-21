@@ -1,6 +1,7 @@
 
 import os
 import json
+import asyncio
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -96,17 +97,48 @@ IMPORTANT RULES:
 9. Confidence must be between 0 and 1.
 """
 
-    response = await client.aio.models.generate_content(
-        model=MODEL_NAME,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            temperature=0.2,
-            max_output_tokens=700,
-        ),
-    )
+    # -----------------------------
+    # GEMINI REQUEST WITH RETRIES
+    # -----------------------------
 
-    if not response.text:
+    response = None
+
+    for attempt in range(3):
+
+        try:
+            print(
+                f"Gemini request: attempt {attempt + 1}/3",
+                flush=True
+            )
+
+            response = await asyncio.wait_for(
+                client.aio.models.generate_content(
+                    model=MODEL_NAME,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        temperature=0.2,
+                        max_output_tokens=700,
+                    ),
+                ),
+                timeout=30
+            )
+
+            break
+
+        except Exception as error:
+
+            if attempt == 2:
+                raise
+
+            print(
+                f"Gemini temporarily unavailable: {error}",
+                flush=True
+            )
+
+            await asyncio.sleep(2 ** (attempt + 1))
+
+    if response is None or not response.text:
         raise ValueError("Gemini returned an empty response.")
 
     try:

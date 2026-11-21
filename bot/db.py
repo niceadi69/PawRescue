@@ -1,3 +1,13 @@
+def save_ai_analysis(report_id, ai_result):
+
+    response = supabase.table("rescue_reports").update({
+        "urgency": ai_result.get("urgency", "unknown"),
+        "severity": ai_result.get("severity", "unknown"),
+        "ai_analysis": ai_result,
+        "ai_status": ai_result.get("ai_status", "completed"),
+    }).eq("id", report_id).execute()
+
+    return response
 
 import os
 import uuid

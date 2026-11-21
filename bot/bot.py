@@ -24,7 +24,8 @@ from telegram.ext import (
 )
 
 from notifier import notify_ngo
-from db import save_report, upload_report_photo
+from db import save_report, upload_report_photo, save_ai_analysis
+from ai import analyze_report
 
 
 # -----------------------------
@@ -131,7 +132,6 @@ async def get_description(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # GET LOCATION
 # -----------------------------
 
-
 async def get_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     report_data = context.user_data["report"]
@@ -168,7 +168,6 @@ async def get_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     return PHOTO
-
 
 
 # -----------------------------
@@ -250,7 +249,6 @@ async def get_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return PHOTO
 
 
-
 # -----------------------------
 # GET PHONE AND SUBMIT REPORT
 # -----------------------------
@@ -264,8 +262,12 @@ async def get_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     report_data["telegram_user_id"] = str(update.effective_user.id)
 
     photo_count = len(report_data["photos"])
+
     uploaded_photos = []
     failed_photos = []
+
+    ai_result = None
+    ai_success = False
 
     # STEP 1: SAVE REPORT TO SUPABASE
 
@@ -291,13 +293,9 @@ async def get_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         try:
 
-            # Download photo from Telegram
-
             telegram_file = await context.bot.get_file(photo_id)
 
             photo_bytes = await telegram_file.download_as_bytearray()
-
-            # Upload photo to Supabase Storage
 
             storage_path = upload_report_photo(
                 report_id=report_id,
@@ -324,13 +322,41 @@ async def get_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 report_id
             )
 
-    # STEP 3: NOTIFY NGO
+    report_data["uploaded_photos"] = uploaded_photos
+
+    # STEP 3: GEMINI AI ANALYSIS
+
+    try:
+
+        logger.info("Starting Gemini analysis for report %s", report_id)
+
+        ai_result = await analyze_report(report_data)
+
+        save_ai_analysis(report_id, ai_result)
+
+        ai_success = True
+
+        report_data["ai_analysis"] = ai_result
+
+        logger.info(
+            "Gemini analysis saved successfully for report %s",
+            report_id
+        )
+
+    except Exception:
+
+        logger.exception(
+            "Gemini analysis or database update failed for report %s",
+            report_id
+        )
+
+        report_data["ai_analysis"] = None
+
+    # STEP 4: NOTIFY NGO
 
     notification_success = True
 
     try:
-
-        report_data["uploaded_photos"] = uploaded_photos
 
         await notify_ngo(report_data)
 
@@ -340,7 +366,7 @@ async def get_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         logger.exception("NGO notification failed")
 
-    # STEP 4: BUILD CONFIRMATION
+    # STEP 5: BUILD CONFIRMATION
 
     confirmation = (
         "✅ Rescue report saved successfully!\n\n"
@@ -351,6 +377,19 @@ async def get_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📸 Photos uploaded: {len(uploaded_photos)}/{photo_count}\n"
         "Thank you for helping an animal in need! ❤️"
     )
+
+    if ai_success:
+
+        confirmation += (
+            "\n\n🤖 AI analysis completed successfully."
+        )
+
+    else:
+
+        confirmation += (
+            "\n\n⚠️ AI analysis is currently unavailable. "
+            "Your rescue report was still saved."
+        )
 
     if failed_photos:
 
@@ -366,14 +405,14 @@ async def get_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "but your report was safely saved."
         )
 
-    # STEP 5: SEND CONFIRMATION
+    # STEP 6: SEND CONFIRMATION
 
     await update.message.reply_text(
         confirmation,
         reply_markup=ReplyKeyboardRemove(),
     )
 
-    # STEP 6: CLEAR REPORT DATA
+    # STEP 7: CLEAR REPORT DATA
 
     context.user_data.pop("report", None)
     context.user_data.pop("photos", None)
