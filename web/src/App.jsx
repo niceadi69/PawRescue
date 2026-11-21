@@ -1,7 +1,11 @@
 import { useState } from "react";
 import "./App.css";
+import "./live.css";
+import { supabase } from "./supabaseClient";
+import { STATUS_OPTIONS, useReports } from "./useReports";
 
-const reports = [
+// Sample data, shown only until Supabase keys are added in web/.env
+const sampleReports = [
   {
     id: "PR001",
     name: "Golden Retriever",
@@ -105,6 +109,42 @@ function App() {
     phone: "",
     area: "",
   });
+  const [statusError, setStatusError] = useState("");
+
+  const {
+    live,
+    reports: liveReports,
+    loading: reportsLoading,
+    error: reportsError,
+    updateStatus,
+  } = useReports();
+
+  // Live Supabase reports once keys are set, sample data before that
+  const reports = live ? liveReports : sampleReports;
+
+  const countByStatus = (labels) =>
+    reports.filter((report) => labels.includes(report.status)).length;
+
+  const stats = live
+    ? {
+        total: reports.length,
+        pending: countByStatus(["New", "Reviewed"]),
+        inProgress: countByStatus(["Assigned", "In Progress"]),
+        rescued: countByStatus(["Rescued", "Closed"]),
+      }
+    : { total: 128, pending: 18, inProgress: 12, rescued: 98 };
+
+  // Keep the open report in sync with the latest data
+  const openReport = selectedReport
+    ? reports.find((report) => report.id === selectedReport.id) ||
+      selectedReport
+    : null;
+
+  const handleStatusChange = async (report, status) => {
+    setStatusError("");
+    const message = await updateStatus(report.uuid, status);
+    if (message) setStatusError(message);
+  };
 
   const filteredReports = reports.filter((report) => {
     const matchesFilter = filter === "All" || report.urgency === filter;
@@ -179,6 +219,16 @@ function App() {
         />
       </div>
 
+      {live && reportsLoading && (
+        <div className="live-banner">Loading rescue reports…</div>
+      )}
+
+      {live && reportsError && (
+        <div className="live-banner error">
+          Couldn't load reports: {reportsError}
+        </div>
+      )}
+
       <div className="filters">
         {["All", "Critical", "High", "Medium", "Low"].map((item) => (
           <button
@@ -218,7 +268,10 @@ function App() {
 
             <button
               className="view-btn"
-              onClick={() => setSelectedReport(report)}
+              onClick={() => {
+                setStatusError("");
+                setSelectedReport(report);
+              }}
             >
               View Report
             </button>
@@ -485,29 +538,39 @@ const renderRescuedAnimals = () => (
             <h1>Welcome back! 👋</h1>
             <p>Here's what's happening with PawRescue today.</p>
           </div>
-          <div className="profile">🧑 NGO Administrator</div>
+          <div className="profile-area">
+            <div className="profile">🧑 NGO Administrator</div>
+            {live && (
+              <button
+                className="filter-btn"
+                onClick={() => supabase.auth.signOut()}
+              >
+                Sign out
+              </button>
+            )}
+          </div>
         </header>
 
         {activeTab !== "Volunteers" && (
           <section className="stats">
             <div className="stat-card">
               <div className="stat-icon">📋</div>
-              <div className="stat-number">128</div>
+              <div className="stat-number">{stats.total}</div>
               <div className="stat-label">Total Reports</div>
             </div>
             <div className="stat-card">
               <div className="stat-icon">🚨</div>
-              <div className="stat-number">18</div>
+              <div className="stat-number">{stats.pending}</div>
               <div className="stat-label">Pending Rescues</div>
             </div>
             <div className="stat-card">
               <div className="stat-icon">🚑</div>
-              <div className="stat-number">12</div>
+              <div className="stat-number">{stats.inProgress}</div>
               <div className="stat-label">Rescue In Progress</div>
             </div>
             <div className="stat-card">
               <div className="stat-icon">❤️</div>
-              <div className="stat-number">98</div>
+              <div className="stat-number">{stats.rescued}</div>
               <div className="stat-label">Animals Rescued</div>
             </div>
           </section>
@@ -530,7 +593,7 @@ const renderRescuedAnimals = () => (
          
       </main>
 
-      {selectedReport && (
+      {openReport && (
         <div
           className="modal-overlay"
           onClick={() => setSelectedReport(null)}
@@ -549,34 +612,135 @@ const renderRescuedAnimals = () => (
 
             <img
               className="modal-photo"
-              src={selectedReport.image}
-              alt={selectedReport.name}
+              src={openReport.image}
+              alt={openReport.name}
             />
 
-            <h2>{selectedReport.name}</h2>
-            <p className="modal-id">Report ID: {selectedReport.id}</p>
+            {openReport.photos && openReport.photos.length > 1 && (
+              <div className="modal-photos">
+                {openReport.photos.map((url, index) => (
+                  <a key={url} href={url} target="_blank" rel="noreferrer">
+                    <img src={url} alt={`Report photo ${index + 1}`} />
+                  </a>
+                ))}
+              </div>
+            )}
+
+            <h2>{openReport.name}</h2>
+            <p className="modal-id">Report ID: {openReport.id}</p>
+
+            {openReport.description && (
+              <p className="modal-description">{openReport.description}</p>
+            )}
+
+            {openReport.duplicateOf && (
+              <p className="duplicate-note">
+                ⚠️ Possible duplicate of {openReport.duplicateOf}
+              </p>
+            )}
 
             <div className="modal-details">
-              <p><strong>Animal:</strong> {selectedReport.type}</p>
-              <p><strong>Location:</strong> {selectedReport.location}</p>
-              <p><strong>Reported:</strong> {selectedReport.date}</p>
-              <p><strong>Urgency:</strong> {selectedReport.urgency}</p>
-              <p><strong>Status:</strong> {selectedReport.status}</p>
+              <p><strong>Animal:</strong> {openReport.type}</p>
+              <p>
+                <strong>Location:</strong> {openReport.location}
+                {openReport.mapUrl && (
+                  <>
+                    {" · "}
+                    <a
+                      className="map-link"
+                      href={openReport.mapUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Open map
+                    </a>
+                  </>
+                )}
+              </p>
+              <p><strong>Reported:</strong> {openReport.date}</p>
+              <p><strong>Urgency:</strong> {openReport.urgency}</p>
+              <p><strong>Status:</strong> {openReport.status}</p>
               <p>
                 <strong>Volunteer:</strong>{" "}
-                {assigned[selectedReport.id] || "Not assigned"}
+                {assigned[openReport.id] || "Not assigned"}
               </p>
             </div>
+
+            {live && (
+              <div className="ai-box">
+                <h3>🤖 AI triage</h3>
+                <p className="ai-label">
+                  AI suggestion only. A person must review every case.
+                </p>
+
+                {openReport.ai ? (
+                  <>
+                    <p>
+                      <strong>Suggested urgency:</strong> {openReport.urgency}
+                      {" · "}
+                      <strong>Severity:</strong> {openReport.severity}
+                      {openReport.ai.confidence !== null &&
+                        ` · ${Math.round(openReport.ai.confidence * 100)}% confident`}
+                    </p>
+
+                    {openReport.ai.recommendedAction && (
+                      <p>
+                        <strong>Recommended action:</strong>{" "}
+                        {openReport.ai.recommendedAction}
+                      </p>
+                    )}
+
+                    {openReport.ai.visibleConcerns.length > 0 && (
+                      <>
+                        <p><strong>Concerns:</strong></p>
+                        <ul>
+                          {openReport.ai.visibleConcerns.map(
+                            (concern, index) => (
+                              <li key={`${index}-${concern}`}>{concern}</li>
+                            )
+                          )}
+                        </ul>
+                      </>
+                    )}
+                  </>
+                ) : openReport.aiStatus === "failed" ? (
+                  <p>AI analysis failed. Review this report manually.</p>
+                ) : (
+                  <p>AI analysis is still running…</p>
+                )}
+              </div>
+            )}
+
+            {live && (
+              <div className="status-area">
+                <h3>Update Rescue Status</h3>
+                <select
+                  className="volunteer-select"
+                  value={openReport.statusValue}
+                  onChange={(event) =>
+                    handleStatusChange(openReport, event.target.value)
+                  }
+                >
+                  {STATUS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+
+                {statusError && <p className="status-error">{statusError}</p>}
+              </div>
+            )}
 
             <div className="assignment-area">
               <h3>Assign Rescue Volunteer</h3>
               <select
                 className="volunteer-select"
-                value={assigned[selectedReport.id] || ""}
+                value={assigned[openReport.id] || ""}
                 onChange={(event) =>
                   setAssigned((previous) => ({
                     ...previous,
-                    [selectedReport.id]: event.target.value,
+                    [openReport.id]: event.target.value,
                   }))
                 }
               >
@@ -590,7 +754,7 @@ const renderRescuedAnimals = () => (
                   ))}
               </select>
 
-              {assigned[selectedReport.id] && (
+              {assigned[openReport.id] && (
                 <p className="assignment-success">
                   ✓ Volunteer assigned successfully!
                 </p>

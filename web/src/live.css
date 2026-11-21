@@ -1,0 +1,102 @@
+/* Styles for live Supabase data in the NGO dashboard */
+
+.live-banner {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #FFF0D6;
+  color: #93631F;
+  font-size: 14px;
+}
+
+.live-banner.error {
+  background: #FCE2DB;
+  color: #B44229;
+}
+
+.profile-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-description {
+  margin: 12px 0 0;
+  color: #35251C;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.modal-photos {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  overflow-x: auto;
+}
+
+.modal-photos img {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.map-link {
+  color: #795548;
+  font-weight: 600;
+}
+
+.duplicate-note {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #FFF0D6;
+  color: #93631F;
+  font-size: 13px;
+}
+
+.ai-box {
+  margin: 0 0 20px;
+  padding: 15px;
+  border: 1px solid #DCC5A8;
+  border-radius: 12px;
+  background: #FFFBF5;
+}
+
+.ai-box h3 {
+  margin: 0 0 4px;
+  color: #4B2E22;
+  font-size: 15px;
+}
+
+.ai-label {
+  margin: 0 0 10px;
+  color: #907D6E;
+  font-size: 12px;
+}
+
+.ai-box p,
+.ai-box li {
+  margin: 6px 0;
+  font-size: 14px;
+}
+
+.ai-box ul {
+  margin: 4px 0;
+  padding-left: 18px;
+}
+
+.status-area {
+  margin-bottom: 20px;
+}
+
+.status-area h3 {
+  color: #4B2E22;
+}
+
+.status-error {
+  color: #B44229;
+  font-size: 13px;
+  font-weight: 600;
+}
