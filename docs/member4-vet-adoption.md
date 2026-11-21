@@ -33,9 +33,11 @@ Run it like the dashboard: `cd web`, `npm install`, `npm run dev`.
    ```
 
    If vets need approval in your setup (like NGOs), mark this one approved too.
-3. **Assign the vet to a report** (admin-only). Easiest: sign in to
-   `/vet.html` with an **admin** account. Admins see every report; open one
-   and pick the vet under **Vet assignment**. Or do it in SQL with a report's
+3. **Assign the report to an NGO and the vet** (admin-only). Easiest: sign in
+   to `/vet.html` with an **admin** account (the main dashboard links there).
+   Admins see every report; open one and use **Assignments** to pick an
+   approved NGO (it then shows on that NGO's dashboard) and the vet. Or do it
+   in SQL with a report's
    `id` from the `rescue_reports` table:
 
    ```sql
@@ -49,8 +51,8 @@ Run it like the dashboard: `cd web`, `npm install`, `npm run dev`.
 
 ## Demo flow
 
-1. Admin signs in at `/vet.html`, opens the new Telegram report and assigns
-   it to the vet.
+1. Admin signs in on the main dashboard, clicks **Open the vet desk**, opens
+   the new Telegram report and assigns it to an NGO and the vet.
 2. Vet signs in at `/vet.html` (another browser or an incognito window),
    opens the case, sees the photo and AI triage, and saves an exam record.
    The NGO can read the history.

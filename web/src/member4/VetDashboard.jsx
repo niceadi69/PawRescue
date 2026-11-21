@@ -313,7 +313,7 @@ function CaseDetail({ caseItem, vetId, isAdmin, onClose, onSaved }) {
           📍 {caseItem.location} · Reported {formatDate(caseItem.reportedAt)}
         </p>
 
-        {isAdmin && <AssignVet reportId={caseItem.id} adminId={vetId} />}
+        {isAdmin && <AssignCase reportId={caseItem.id} adminId={vetId} />}
 
         {photos.length > 0 && (
           <div className="m4-photos">
@@ -459,39 +459,47 @@ function CaseDetail({ caseItem, vetId, isAdmin, onClose, onSaved }) {
   );
 }
 
-// Admins can send a report to a vet's desk (assignments are admin-only)
-function AssignVet({ reportId, adminId }) {
+// Admins send a report to an NGO's dashboard and to a vet's desk
+// (assignments are admin-only in the database)
+function AssignCase({ reportId, adminId }) {
+  const [ngos, setNgos] = useState([]);
   const [vets, setVets] = useState([]);
   const [current, setCurrent] = useState([]);
-  const [choice, setChoice] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [ngoChoice, setNgoChoice] = useState("");
+  const [vetChoice, setVetChoice] = useState("");
+  const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
   const load = useCallback(async () => {
-    const [vetsResult, assignmentsResult] = await Promise.all([
+    const [ngosResult, vetsResult, assignmentsResult] = await Promise.all([
+      supabase
+        .from("ngos")
+        .select("id, organisation_name")
+        .eq("verification_status", "approved"),
       supabase.from("veterinarians").select("id, clinic_name, profiles(full_name)"),
       supabase
         .from("rescue_assignments")
-        .select("id, veterinarian_id, assignment_status")
+        .select("id, ngo_id, veterinarian_id, assignment_status")
         .eq("report_id", reportId)
-        .not("veterinarian_id", "is", null)
         .neq("assignment_status", "cancelled"),
     ]);
 
-    const failed = vetsResult.error || assignmentsResult.error;
-    if (failed) {
-      setError(failed.message);
-      return;
-    }
+    // One failed list shouldn't hide the others
+    const failed = ngosResult.error || vetsResult.error || assignmentsResult.error;
+    if (failed) setError(failed.message);
 
-    setVets(vetsResult.data);
-    setCurrent(assignmentsResult.data);
+    setNgos(ngosResult.data || []);
+    setVets(vetsResult.data || []);
+    setCurrent(assignmentsResult.data || []);
   }, [reportId]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  const ngoName = (id) =>
+    ngos.find((item) => item.id === id)?.organisation_name || "An NGO";
 
   const vetName = (id) => {
     const vet = vets.find((item) => item.id === id);
@@ -499,9 +507,10 @@ function AssignVet({ reportId, adminId }) {
     return person?.full_name || vet?.clinic_name || "A vet";
   };
 
-  const assign = async () => {
+  const assign = async (kind) => {
+    const choice = kind === "ngo" ? ngoChoice : vetChoice;
     if (!choice) return;
-    setBusy(true);
+    setBusy(kind);
     setError("");
     setNotice("");
 
@@ -509,56 +518,92 @@ function AssignVet({ reportId, adminId }) {
       .from("rescue_assignments")
       .insert({
         report_id: reportId,
-        veterinarian_id: choice,
+        [kind === "ngo" ? "ngo_id" : "veterinarian_id"]: choice,
         assigned_by: adminId,
         assignment_status: "assigned",
       });
 
-    setBusy(false);
+    setBusy("");
 
     if (insertError) {
       setError(insertError.message);
       return;
     }
 
-    setNotice(`Assigned to ${vetName(choice)}. It's on their vet desk now.`);
-    setChoice("");
+    if (kind === "ngo") {
+      setNotice(`Assigned to ${ngoName(choice)}. It's on their NGO dashboard now.`);
+      setNgoChoice("");
+    } else {
+      setNotice(`Assigned to ${vetName(choice)}. It's on their vet desk now.`);
+      setVetChoice("");
+    }
     load();
   };
 
+  const assignedNgos = current
+    .filter((item) => item.ngo_id)
+    .map((item) => ngoName(item.ngo_id));
+  const assignedVets = current
+    .filter((item) => item.veterinarian_id)
+    .map((item) => vetName(item.veterinarian_id));
+
   return (
     <div className="m4-assign">
-      <h3>Vet assignment</h3>
-      {current.length > 0 ? (
-        <p>
-          Assigned to{" "}
-          {current.map((item) => vetName(item.veterinarian_id)).join(", ")}
-        </p>
-      ) : (
-        <p className="m4-muted">No vet assigned yet.</p>
-      )}
+      <h3>Assignments</h3>
+      <p className={assignedNgos.length > 0 ? "" : "m4-muted"}>
+        NGO: {assignedNgos.length > 0 ? assignedNgos.join(", ") : "not assigned yet"}
+      </p>
+      <p className={assignedVets.length > 0 ? "" : "m4-muted"}>
+        Vet: {assignedVets.length > 0 ? assignedVets.join(", ") : "not assigned yet"}
+      </p>
 
       <div className="m4-assign-row">
-        <select value={choice} onChange={(event) => setChoice(event.target.value)}>
-          <option value="">Choose a vet</option>
-          {vets.map((vet) => (
-            <option key={vet.id} value={vet.id}>
-              {vetName(vet.id)}
-              {vet.clinic_name ? ` · ${vet.clinic_name}` : ""}
+        <select value={ngoChoice} onChange={(event) => setNgoChoice(event.target.value)}>
+          <option value="">Choose an approved NGO</option>
+          {ngos.map((ngo) => (
+            <option key={ngo.id} value={ngo.id}>
+              {ngo.organisation_name}
             </option>
           ))}
         </select>
         <button
           type="button"
           className="m4-button"
-          onClick={assign}
-          disabled={!choice || busy}
+          onClick={() => assign("ngo")}
+          disabled={!ngoChoice || busy !== ""}
         >
-          {busy ? "Assigning…" : "Assign"}
+          {busy === "ngo" ? "Assigning…" : "Assign NGO"}
         </button>
       </div>
 
-      {vets.length === 0 && !error && (
+      <div className="m4-assign-row">
+        <select value={vetChoice} onChange={(event) => setVetChoice(event.target.value)}>
+          <option value="">Choose a vet</option>
+          {vets.map((vet) => (
+            <option key={vet.id} value={vet.id}>
+              {vetName(vet.id)}
+              {vet.clinic_name && vetName(vet.id) !== vet.clinic_name
+                ? ` · ${vet.clinic_name}`
+                : ""}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className="m4-button"
+          onClick={() => assign("vet")}
+          disabled={!vetChoice || busy !== ""}
+        >
+          {busy === "vet" ? "Assigning…" : "Assign vet"}
+        </button>
+      </div>
+
+      {!error && ngos.length === 0 && (
+        <p className="m4-muted">
+          No approved NGOs yet. Approve one on the main dashboard first.
+        </p>
+      )}
+      {!error && vets.length === 0 && (
         <p className="m4-muted">
           No vet accounts yet. Create one first (see
           docs/member4-vet-adoption.md).
