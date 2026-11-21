@@ -264,3 +264,85 @@ create policy "m4 staff upload adoption photos"
         bucket_id = 'adoption-photos'
         and public.m4_current_role() in ('ngo', 'admin')
     );
+
+-- =============================================================
+-- 5. Cruelty reports from the public web form (/report.html)
+--    Anyone can file one; only admins can read or update them.
+-- =============================================================
+create table if not exists public.cruelty_reports (
+    id uuid primary key default gen_random_uuid(),
+    created_at timestamptz not null default now(),
+    reference text not null unique,
+    incident_type text not null check (incident_type in (
+        'beating', 'poisoning', 'neglect', 'abandonment', 'transport',
+        'slaughter', 'dog_removal', 'fights_shows', 'wildlife', 'other'
+    )),
+    animal_type text not null,
+    animal_count integer not null default 1 check (animal_count between 1 and 500),
+    happening_now boolean not null default false,
+    incident_date date,
+    incident_time text,
+    description text not null check (char_length(description) between 20 and 4000),
+    people_involved text,
+    vehicle_number text,
+    state text not null,
+    city text not null,
+    locality text not null,
+    landmark text,
+    pincode text check (pincode is null or pincode ~ '^[1-9][0-9]{5}$'),
+    latitude double precision,
+    longitude double precision,
+    evidence_paths text[] not null default '{}',
+    is_anonymous boolean not null default false,
+    reporter_name text,
+    reporter_phone text check (reporter_phone is null or reporter_phone ~ '^[6-9][0-9]{9}$'),
+    reporter_email text,
+    contact_ok boolean not null default false,
+    wants_fir_help boolean not null default false,
+    status text not null default 'received'
+        check (status in ('received', 'under_review', 'referred', 'closed')),
+    staff_notes text
+);
+
+alter table public.cruelty_reports enable row level security;
+
+drop policy if exists "m4 anyone can file a cruelty report" on public.cruelty_reports;
+create policy "m4 anyone can file a cruelty report"
+    on public.cruelty_reports for insert to anon, authenticated
+    with check (
+        status = 'received'
+        and staff_notes is null
+        and (
+            not is_anonymous
+            or (reporter_name is null and reporter_phone is null and reporter_email is null)
+        )
+    );
+
+drop policy if exists "m4 admins read cruelty reports" on public.cruelty_reports;
+create policy "m4 admins read cruelty reports"
+    on public.cruelty_reports for select to authenticated
+    using (public.m4_is_admin());
+
+drop policy if exists "m4 admins update cruelty reports" on public.cruelty_reports;
+create policy "m4 admins update cruelty reports"
+    on public.cruelty_reports for update to authenticated
+    using (public.m4_is_admin())
+    with check (public.m4_is_admin());
+
+grant insert on public.cruelty_reports to anon, authenticated;
+grant select, update on public.cruelty_reports to authenticated;
+
+-- Private bucket for evidence photos: the public can upload, only admins can view
+insert into storage.buckets (id, name, public)
+values ('cruelty-evidence', 'cruelty-evidence', false)
+on conflict (id) do nothing;
+
+drop policy if exists "m4 anyone can upload cruelty evidence" on storage.objects;
+create policy "m4 anyone can upload cruelty evidence"
+    on storage.objects for insert to anon, authenticated
+    with check (bucket_id = 'cruelty-evidence');
+
+drop policy if exists "m4 admins view cruelty evidence" on storage.objects;
+create policy "m4 admins view cruelty evidence"
+    on storage.objects for select to authenticated
+    using (bucket_id = 'cruelty-evidence' and public.m4_is_admin());

@@ -10,6 +10,7 @@ const PAGES = {
   desk: { href: `${base}adoption-desk.html`, label: "Open the adoption desk" },
   adopt: { href: `${base}adopt.html`, label: "View the public adoption portal" },
   donate: { href: `${base}donate.html`, label: "Open the donation page" },
+  report: { href: `${base}report.html`, label: "Report animal cruelty" },
 };
 
 const BY_ROLE = {
@@ -59,6 +60,8 @@ export function AdoptLink() {
       Looking to adopt? <a href={PAGES.adopt.href}>Meet the rescued animals</a>
       {" · "}
       <a href={PAGES.donate.href}>Support a rescue</a>
+      {" · "}
+      <a href={PAGES.report.href}>Report cruelty</a>
     </p>
   );
 }

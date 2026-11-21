@@ -81,3 +81,19 @@ crypto wallets (BTC, ETH, USDT). Every QR code is a drawn pattern that can't be
 scanned, and every UPI ID and wallet address is a deliberately invalid
 placeholder, so the page can't receive money. It needs no database setup. The
 login page and the adoption portal link to it.
+
+## Cruelty report page
+
+`/report.html` lets anyone report animal cruelty: the type of cruelty, the
+animal, whether it's happening now (with a prompt to call 112), date and time,
+what they saw, people or vehicle involved, the place (state or UT, city,
+locality, landmark, PIN code, optional GPS), up to 3 photos, and their contact
+details, or nothing if they choose to stay anonymous. They get a reference
+number like `PR-CR-7K2M9Q`. A sidebar cites the PCA Act 1960 s.11, BNS 2023
+s.325, the ABC Rules 2023, the Wild Life (Protection) Act 1972 and Article
+51A(g).
+
+Reports go to `public.cruelty_reports` and photos to the private
+`cruelty-evidence` bucket (section 5 of `supabase/member4_vet_adoption.sql`).
+Anyone can file a report; only admins can read or update reports and photos.
+For now, admins review them in the Supabase table editor.

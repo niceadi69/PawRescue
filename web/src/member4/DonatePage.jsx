@@ -191,6 +191,7 @@ export default function DonatePage() {
             <a className="dn-on" href={`${base}donate.html`} aria-current="page">
               Donate
             </a>
+            <a href={`${base}report.html`}>Report cruelty</a>
           </div>
         </nav>
         <div className="dn-hero-body">

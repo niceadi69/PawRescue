@@ -17,6 +17,7 @@ export default defineConfig({
         adoptionDesk: page('./adoption-desk.html'),
         adopt: page('./adopt.html'),
         donate: page('./donate.html'),
+        report: page('./report.html'),
       },
     },
   },

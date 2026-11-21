@@ -466,6 +466,19 @@
   text-align: center;
 }
 
+@media (max-width: 600px) {
+  .dn-nav,
+  .dn-links {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .dn-links a {
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+}
+
 @media (max-width: 900px) {
   .dn-top,
   .dn-coins {
