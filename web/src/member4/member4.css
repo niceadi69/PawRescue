@@ -657,3 +657,9 @@ textarea {
 .m4-hero {
   background: linear-gradient(135deg, #1d5b38 0%, #174b32 55%, #0f3322 100%);
 }
+
+/* Lighter accent for the logo on the dark green heroes */
+.m4-hero .m4-brand span,
+.dn-nav .m4-brand span {
+  color: #a8d5b5;
+}
