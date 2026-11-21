@@ -24,7 +24,14 @@ from telegram.ext import (
 )
 
 from notifier import notify_ngo
-from db import save_report, upload_report_photo, save_ai_analysis
+
+from db import (
+    save_report,
+    upload_report_photo,
+    save_ai_analysis,
+    mark_ai_failed,
+)
+
 from ai import analyze_report
 
 
@@ -178,8 +185,6 @@ async def get_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     photos = context.user_data.setdefault("photos", [])
 
-    # FINISH PHOTO COLLECTION
-
     if update.message.text:
 
         command = update.message.text.lower().strip()
@@ -210,8 +215,6 @@ async def get_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
             return PHONE
-
-    # RECEIVE PHOTO
 
     if update.message.photo:
 
@@ -328,7 +331,10 @@ async def get_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
 
-        logger.info("Starting Gemini analysis for report %s", report_id)
+        logger.info(
+            "Starting Gemini analysis for report %s",
+            report_id
+        )
 
         ai_result = await analyze_report(report_data)
 
@@ -343,12 +349,28 @@ async def get_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
             report_id
         )
 
-    except Exception:
+    except Exception as error:
 
         logger.exception(
             "Gemini analysis or database update failed for report %s",
             report_id
         )
+
+        try:
+
+            mark_ai_failed(report_id, error)
+
+            logger.info(
+                "AI failure status saved for report %s",
+                report_id
+            )
+
+        except Exception:
+
+            logger.exception(
+                "Could not save AI failure status for report %s",
+                report_id
+            )
 
         report_data["ai_analysis"] = None
 
