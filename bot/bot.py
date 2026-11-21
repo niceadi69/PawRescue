@@ -242,6 +242,8 @@ async def get_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     report_data["photos"] = context.user_data.get("photos", [])
 
+    report_data["telegram_user_id"] = str(update.effective_user.id)
+
     photo_count = len(report_data["photos"])
 
     # SEND REPORT TO NGO NOTIFIER
