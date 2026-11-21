@@ -232,7 +232,7 @@ function App() {
     </>
   );
   
-const rescuedAnimals = reportList.filter(
+const rescuedAnimals = reports.filter(
   (report) => report.status === "Rescued"
 );
 
