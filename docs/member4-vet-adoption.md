@@ -1,4 +1,4 @@
-# Member 4: Vet desk and adoption
+# Member 4 (Rhythm): Vet desk and adoption
 
 Three pages that sit beside the NGO dashboard. They use the shared
 `web/src/supabaseClient.js` and the same `web/.env` (Supabase URL + anon key),

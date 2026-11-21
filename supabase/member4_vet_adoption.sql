@@ -1,5 +1,5 @@
 -- ==========================================
--- PawRescue Member 4: vet medical records + adoption
+-- PawRescue Member 4 (Rhythm): vet medical records + adoption
 -- ==========================================
 -- Run once in Supabase -> SQL Editor. Safe to run again.
 --

@@ -1,3 +1,4 @@
+// Member 4 (Rhythm): vet desk, adoption desk and adoption portal
 import { supabase } from "../supabaseClient";
 
 export const RESCUE_BUCKET = "rescue-photos";
