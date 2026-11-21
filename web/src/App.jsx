@@ -1,613 +1,637 @@
-import { useState } from "react";
-import "./App.css";
-
-const reports = [
-  {
-    id: "PR001",
-    name: "Golden Retriever",
-    type: "Dog",
-    location: "Model Town",
-    urgency: "Critical",
-    status: "New",
-    date: "Today, 10:30 AM",
-    image: "https://images.unsplash.com/photo-1552053831-71594a27632d?w=600",
-  },
-  {
-    id: "PR002",
-    name: "Brown Puppy",
-    type: "Dog",
-    location: "Civil Lines",
-    urgency: "High",
-    status: "Assigned",
-    date: "Today, 11:15 AM",
-    image: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=600",
-  },
-  {
-    id: "PR003",
-    name: "Street Dog",
-    type: "Dog",
-    location: "Urban Estate",
-    urgency: "Medium",
-    status: "In Progress",
-    date: "Today, 12:00 PM",
-    image: "https://images.unsplash.com/photo-1517849845537-4d257902454a?w=600",
-  },
-  {
-    id: "PR004",
-    name: "Rescue Puppy",
-    type: "Dog",
-    location: "Green Park",
-    urgency: "Low",
-    status: "New",
-    date: "Yesterday",
-    image: "https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?w=600",
-  },
-];
-
-const initialVolunteers = [
-  {
-    id: 1,
-    name: "Rahul Sharma",
-    phone: "+91 98765 43210",
-    area: "Model Town",
-    cases: 3,
-    available: true,
-    initials: "RS",
-  },
-  {
-    id: 2,
-    name: "Priya Singh",
-    phone: "+91 98765 12345",
-    area: "Civil Lines",
-    cases: 2,
-    available: true,
-    initials: "PS",
-  },
-  {
-    id: 3,
-    name: "Aman Verma",
-    phone: "+91 98765 67890",
-    area: "Urban Estate",
-    cases: 4,
-    available: false,
-    initials: "AV",
-  },
-  {
-    id: 4,
-    name: "Neha Kapoor",
-    phone: "+91 98765 11111",
-    area: "Green Park",
-    cases: 1,
-    available: true,
-    initials: "NK",
-  },
-];
-
-const menu = [
-  { name: "Overview", icon: "📊" },
-  { name: "Rescue Reports", icon: "🐾" },
-  { name: "Rescued Animals", icon: "🐶" },
-  { name: "Volunteers", icon: "🤝" },
-  { name: "Settings", icon: "⚙️" },
-];
+import { useEffect, useState } from 'react'
+import { supabase } from './supabaseClient'
+import './App.css'
 
 function App() {
-  const [activeTab, setActiveTab] = useState("Overview");
-  const [filter, setFilter] = useState("All");
-  const [search, setSearch] = useState("");
-  const [selectedReport, setSelectedReport] = useState(null);
-  const [assigned, setAssigned] = useState({});
-  const [animalCare, setAnimalCare] = useState({});
-  const [volunteers, setVolunteers] = useState(initialVolunteers);
-  const [showVolunteerForm, setShowVolunteerForm] = useState(false);
-  const [newVolunteer, setNewVolunteer] = useState({
-    name: "",
-    phone: "",
-    area: "",
-  });
+  const [session, setSession] = useState(null)
+  const [profile, setProfile] = useState(null)
+  const [ngo, setNgo] = useState(null)
+  const [pendingNGOs, setPendingNGOs] = useState([])
+  const [assignedReports, setAssignedReports] = useState([])
+  const [reportsLoading, setReportsLoading] = useState(false)
 
-  const filteredReports = reports.filter((report) => {
-    const matchesFilter = filter === "All" || report.urgency === filter;
-    const searchTerm = search.toLowerCase();
+  const [mode, setMode] = useState('login')
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [reviewing, setReviewing] = useState(null)
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
 
-    const matchesSearch =
-      report.name.toLowerCase().includes(searchTerm) ||
-      report.location.toLowerCase().includes(searchTerm) ||
-      report.id.toLowerCase().includes(searchTerm);
+  const [fullName, setFullName] = useState('')
+  const [organisationName, setOrganisationName] = useState('')
+  const [description, setDescription] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
 
-    return matchesFilter && matchesSearch;
-  });
+  async function loadPendingNGOs() {
+    const { data, error } = await supabase
+      .from('ngos')
+      .select('id, organisation_name, description, verification_status, created_at')
+      .eq('verification_status', 'pending')
+      .order('created_at', { ascending: true })
 
-  const availableCount = volunteers.filter(
-    (volunteer) => volunteer.available
-  ).length;
-
-  const handleAddVolunteer = (event) => {
-    event.preventDefault();
-
-    const name = newVolunteer.name.trim();
-    const phone = newVolunteer.phone.trim();
-    const area = newVolunteer.area.trim();
-
-    if (!name || !phone || !area) {
-      return;
+    if (error) {
+      setError(`Could not load applications: ${error.message}`)
+      return
     }
 
-    const initials = name
-      .split(" ")
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0].toUpperCase())
-      .join("");
+    setPendingNGOs(data || [])
+  }
 
-    const volunteer = {
-      id: Date.now(),
-      name,
-      phone,
-      area,
-      cases: 0,
-      available: true,
-      initials,
-    };
+  async function loadAssignedReports(userId) {
+    setReportsLoading(true)
 
-    setVolunteers((current) => [...current, volunteer]);
-    setNewVolunteer({ name: "", phone: "", area: "" });
-    setShowVolunteerForm(false);
-  };
+    const { data: assignments, error: assignmentError } = await supabase
+      .from('rescue_assignments')
+      .select('id, report_id, assignment_status, assigned_at')
+      .eq('ngo_id', userId)
 
-  const toggleVolunteerAvailability = (volunteerId) => {
-    setVolunteers((current) =>
-      current.map((volunteer) =>
-        volunteer.id === volunteerId
-          ? { ...volunteer, available: !volunteer.available }
-          : volunteer
+    if (assignmentError) {
+      setError(`Could not load assignments: ${assignmentError.message}`)
+      setReportsLoading(false)
+      return
+    }
+
+    if (!assignments || assignments.length === 0) {
+      setAssignedReports([])
+      setReportsLoading(false)
+      return
+    }
+
+    const reportIds = assignments.map(item => item.report_id)
+
+    const { data: reports, error: reportError } = await supabase
+      .from('rescue_reports')
+      .select('id, animal_type, description, location_text, urgency, status, created_at')
+      .in('id', reportIds)
+
+    if (reportError) {
+      setError(`Could not load rescue reports: ${reportError.message}`)
+      setReportsLoading(false)
+      return
+    }
+
+    const combined = assignments.map(assignment => ({
+      ...assignment,
+      report: reports?.find(report => report.id === assignment.report_id),
+    })).filter(item => item.report)
+
+    setAssignedReports(combined)
+    setReportsLoading(false)
+  }
+
+  async function loadProfile(user) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('full_name, role')
+      .eq('id', user.id)
+      .single()
+
+    if (error) {
+      setError(`Profile error: ${error.message}`)
+      return
+    }
+
+    setProfile(data)
+
+    const orgName = user.user_metadata?.organisation_name
+
+    let { data: ngoData, error: ngoError } = await supabase
+      .from('ngos')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (ngoError) {
+      setError(`NGO lookup failed: ${ngoError.message}`)
+      return
+    }
+
+    if (!ngoData && orgName) {
+      const { error: insertError } = await supabase
+        .from('ngos')
+        .insert({
+          id: user.id,
+          organisation_name: orgName,
+          description: user.user_metadata?.organisation_description || null,
+          verification_status: 'pending',
+        })
+
+      if (insertError) {
+        setError(`NGO registration failed: ${insertError.message}`)
+        return
+      }
+
+      const { data: refreshedNGO } = await supabase
+        .from('ngos')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      ngoData = refreshedNGO
+    }
+
+    setNgo(ngoData)
+
+    if (data.role === 'admin') {
+      await loadPendingNGOs()
+    }
+
+    if (data.role === 'ngo') {
+      await loadAssignedReports(user.id)
+    }
+  }
+
+  useEffect(() => {
+    let mounted = true
+
+    async function initialize() {
+      const { data, error } = await supabase.auth.getSession()
+
+      if (!mounted) return
+
+      if (error) setError(error.message)
+
+      setSession(data?.session ?? null)
+      setLoading(false)
+    }
+
+    initialize()
+
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, newSession) => {
+        if (mounted) {
+          setSession(newSession)
+          setProfile(null)
+          setNgo(null)
+          setPendingNGOs([])
+          setAssignedReports([])
+          setError('')
+          setMessage('')
+        }
+      }
+    )
+
+    return () => {
+      mounted = false
+      listener.subscription.unsubscribe()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (session?.user) {
+      loadProfile(session.user)
+    } else {
+      setProfile(null)
+      setNgo(null)
+      setPendingNGOs([])
+      setAssignedReports([])
+    }
+  }, [session])
+
+  async function handleLogin(event) {
+    event.preventDefault()
+    setSubmitting(true)
+    setError('')
+    setMessage('')
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) setError(error.message)
+
+    setSubmitting(false)
+  }
+
+  async function handleSignup(event) {
+    event.preventDefault()
+    setSubmitting(true)
+    setError('')
+    setMessage('')
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          role: 'user',
+          organisation_name: organisationName,
+          organisation_description: description,
+        },
+      },
+    })
+
+    if (error) {
+      setError(error.message)
+    } else if (data.session) {
+      setMessage('Account created! Your NGO registration is pending approval.')
+    } else {
+      setMessage(
+        'Account created! Confirm your email, then sign in to complete registration.'
       )
-    );
-  };
+    }
 
-  const renderReports = () => (
-    <>
-      <div className="section-heading">
-        <h2>
-          {activeTab === "Overview" ? "Recent Rescue Reports" : "Rescue Reports"}
-        </h2>
-        <input
-          className="search"
-          placeholder="🔍 Search reports..."
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-        />
-      </div>
+    setSubmitting(false)
+  }
 
-      <div className="filters">
-        {["All", "Critical", "High", "Medium", "Low"].map((item) => (
-          <button
-            key={item}
-            className={`filter-btn ${filter === item ? "active" : ""}`}
-            onClick={() => setFilter(item)}
-          >
-            {item}
+  async function handleReview(ngoId, decision) {
+    setReviewing(ngoId)
+    setError('')
+    setMessage('')
+
+    const newRole = decision === 'approved' ? 'ngo' : 'user'
+
+    const { data: updatedNGO, error: ngoError } = await supabase
+      .from('ngos')
+      .update({ verification_status: decision })
+      .eq('id', ngoId)
+      .eq('verification_status', 'pending')
+      .select('id')
+      .maybeSingle()
+
+    if (ngoError || !updatedNGO) {
+      setError(
+        ngoError?.message ||
+        'Application was not updated. Check admin permissions.'
+      )
+      setReviewing(null)
+      return
+    }
+
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ role: newRole })
+      .eq('id', ngoId)
+
+    if (profileError) {
+      await supabase
+        .from('ngos')
+        .update({ verification_status: 'pending' })
+        .eq('id', ngoId)
+
+      setError(`Role update failed: ${profileError.message}`)
+      setReviewing(null)
+      await loadPendingNGOs()
+      return
+    }
+
+    setMessage(`NGO application ${decision}.`)
+    await loadPendingNGOs()
+    setReviewing(null)
+  }
+
+  async function handleLogout() {
+    const { error } = await supabase.auth.signOut()
+
+    if (error) {
+      setError(error.message)
+      return
+    }
+
+    setSession(null)
+    setProfile(null)
+    setNgo(null)
+    setPendingNGOs([])
+    setAssignedReports([])
+    setMessage('')
+    setError('')
+  }
+
+  if (loading) {
+    return (
+      <main className="loading-screen">
+        <h2>🐾 PawRescue</h2>
+        <p>Preparing your workspace...</p>
+      </main>
+    )
+  }
+
+  if (session) {
+    if (!profile) {
+      return (
+        <main className="loading-screen">
+          <section className="auth-card">
+            <h1>🐾 PawRescue</h1>
+            <p>Loading your account...</p>
+            {error && <p className="error-message">{error}</p>}
+            <button onClick={handleLogout}>Log out</button>
+          </section>
+        </main>
+      )
+    }
+
+    return (
+      <main className="dashboard">
+        <header className="dashboard-header">
+          <div>
+            <h1 className="brand">🐾 PawRescue</h1>
+            <p>Animal Rescue Management Portal</p>
+          </div>
+
+          <button className="logout-button" onClick={handleLogout}>
+            Log out
           </button>
-        ))}
-      </div>
+        </header>
 
-      <section className="report-list">
-        {filteredReports.map((report) => (
-          <article className="report-card" key={report.id}>
-            <img className="dog-photo" src={report.image} alt={report.name} />
+        <section className="welcome-card">
+          <p className="eyebrow">YOUR WORKSPACE</p>
+          <h2>Welcome, {profile.full_name || session.user.email}</h2>
+          <p>
+            Signed in as <strong>{profile.role}</strong>
+          </p>
+        </section>
 
-            <div className="report-info">
-              <h3>{report.name}</h3>
-              <p>🆔 {report.id} · {report.type}</p>
-              <p>📍 {report.location}</p>
-              <p>🕒 {report.date}</p>
-              <span
-                className={`badge ${
-                  report.urgency === "Critical" || report.urgency === "High"
-                    ? "urgent"
-                    : report.urgency === "Medium"
-                    ? "medium"
-                    : "low"
-                }`}
-              >
-                {report.urgency} Priority
+        {profile.role === 'admin' && (
+          <section className="panel">
+            <div className="panel-header">
+              <div>
+                <h2>NGO Applications</h2>
+                <p>Review organisations requesting access.</p>
+              </div>
+
+              <span className="count">
+                {pendingNGOs.length} pending
               </span>
-              &nbsp;
-              <span className="badge status">{report.status}</span>
             </div>
 
             <button
-              className="view-btn"
-              onClick={() => setSelectedReport(report)}
+              className="secondary-button"
+              onClick={loadPendingNGOs}
             >
-              View Report
+              Refresh applications
             </button>
-          </article>
-        ))}
 
-        {filteredReports.length === 0 && (
-          <div className="empty">No matching rescue reports found.</div>
-        )}
-      </section>
-    </>
-  );
-  
-const rescuedAnimals = reportList.filter(
-  (report) => report.status === "Rescued"
-);
-
-const updateAnimalCare = (reportId, field, value) => {
-  setAnimalCare((current) => ({
-    ...current,
-    [reportId]: {
-      ...current[reportId],
-      [field]: value,
-    },
-  }));
-};
-
-const renderRescuedAnimals = () => (
-  <section className="rescued-page">
-    <div className="section-heading">
-      <div>
-        <h2>Rescued Animals 🐾</h2>
-        <p>Track rescued animals and their recovery.</p>
-      </div>
-      <span className="badge status">
-        {rescuedAnimals.length} rescued
-      </span>
-    </div>
-
-    {rescuedAnimals.length === 0 ? (
-      <div className="empty">
-        <h3>No rescued animals yet</h3>
-        <p>
-          Change a rescue report's status to Rescued
-          and the animal will appear here.
-        </p>
-      </div>
-    ) : (
-      <div className="rescued-grid">
-        {rescuedAnimals.map((animal) => {
-          const care = animalCare[animal.id] || {
-            treatment: "Under observation",
-            adoptionReady: false,
-            notes: "",
-          };
-
-          return (
-            <article className="rescued-card" key={animal.id}>
-              <img
-                className="rescued-photo"
-                src={animal.image}
-                alt={animal.name}
-              />
-
-              <div className="rescued-card-content">
-                <h3>{animal.name}</h3>
-                <p>Report ID: {animal.id}</p>
-                <p>📍 {animal.location}</p>
-                <p>
-                  🤝 Volunteer:{" "}
-                  {assigned[animal.id] || "Not assigned"}
-                </p>
-
-                <label className="care-label">
-                  Treatment Progress
-                </label>
-
-                <select
-                  className="volunteer-select"
-                  value={care.treatment}
-                  onChange={(e) =>
-                    updateAnimalCare(
-                      animal.id,
-                      "treatment",
-                      e.target.value
-                    )
-                  }
-                >
-                  <option>Under observation</option>
-                  <option>Receiving treatment</option>
-                  <option>Recovering</option>
-                  <option>Fully recovered</option>
-                </select>
-
-                <label className="care-label">
-                  Care Notes
-                </label>
-
-                <textarea
-                  className="care-notes"
-                  placeholder="Enter treatment or recovery notes..."
-                  value={care.notes}
-                  onChange={(e) =>
-                    updateAnimalCare(
-                      animal.id,
-                      "notes",
-                      e.target.value
-                    )
-                  }
-                  rows={3}
-                />
-
-                <label className="adoption-toggle">
-                  <input
-                    type="checkbox"
-                    checked={care.adoptionReady}
-                    onChange={(e) =>
-                      updateAnimalCare(
-                        animal.id,
-                        "adoptionReady",
-                        e.target.checked
-                      )
-                    }
-                  />
-                  Ready for adoption
-                </label>
+            {pendingNGOs.length === 0 ? (
+              <div className="empty-state">
+                No pending applications. You're all caught up!
               </div>
-            </article>
-          );
-        })}
-      </div>
-    )}
-  </section>
-);
+            ) : (
+              <div className="application-list">
+                {pendingNGOs.map(item => (
+                  <article className="application-card" key={item.id}>
+                    <h3>{item.organisation_name}</h3>
+                    <p>{item.description || 'No description provided.'}</p>
 
-  const renderVolunteers = () => (
-    <section className="volunteer-page">
-      <div className="section-heading">
-        <div>
-          <h2>Volunteer Management</h2>
-          <p>Manage your rescue team and their availability.</p>
-        </div>
-        <button
-          className="view-btn"
-          onClick={() => setShowVolunteerForm((show) => !show)}
-        >
-          {showVolunteerForm ? "Cancel" : "+ Add Volunteer"}
-        </button>
-      </div>
+                    <p className="small-text">
+                      Submitted: {new Date(item.created_at).toLocaleDateString()}
+                    </p>
 
-      <div className="volunteer-summary">
-        <div className="stat-card">
-          <div className="stat-icon">🤝</div>
-          <div className="stat-number">{volunteers.length}</div>
-          <div className="stat-label">Total Volunteers</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">🟢</div>
-          <div className="stat-number">{availableCount}</div>
-          <div className="stat-label">Available Now</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">🚑</div>
-          <div className="stat-number">
-            {volunteers.reduce((total, volunteer) => total + volunteer.cases, 0)}
-          </div>
-          <div className="stat-label">Rescue Cases Handled</div>
-        </div>
-      </div>
+                    <div className="action-row">
+                      <button
+                        className="approve-button"
+                        disabled={reviewing === item.id}
+                        onClick={() => handleReview(item.id, 'approved')}
+                      >
+                        {reviewing === item.id ? 'Processing...' : 'Approve'}
+                      </button>
 
-      {showVolunteerForm && (
-        <form className="volunteer-form" onSubmit={handleAddVolunteer}>
-          <h3>Add a new volunteer</h3>
-          <input
-            type="text"
-            placeholder="Full name"
-            value={newVolunteer.name}
-            onChange={(event) =>
-              setNewVolunteer({ ...newVolunteer, name: event.target.value })
-            }
-            required
-          />
-          <input
-            type="tel"
-            placeholder="Phone number"
-            value={newVolunteer.phone}
-            onChange={(event) =>
-              setNewVolunteer({ ...newVolunteer, phone: event.target.value })
-            }
-            required
-          />
-          <input
-            type="text"
-            placeholder="Area / locality"
-            value={newVolunteer.area}
-            onChange={(event) =>
-              setNewVolunteer({ ...newVolunteer, area: event.target.value })
-            }
-            required
-          />
-          <button className="view-btn" type="submit">
-            Save Volunteer
-          </button>
-        </form>
-      )}
-
-      <div className="volunteer-list">
-        {volunteers.map((volunteer) => (
-          <article className="volunteer-card" key={volunteer.id}>
-            <div className="volunteer-avatar">{volunteer.initials}</div>
-            <div className="volunteer-info">
-              <h3>{volunteer.name}</h3>
-              <p>📞 {volunteer.phone}</p>
-              <p>📍 {volunteer.area}</p>
-              <p>🐾 {volunteer.cases} rescue cases handled</p>
-            </div>
-            <div className="volunteer-actions">
-              <span
-                className={`volunteer-status ${
-                  volunteer.available ? "available" : "unavailable"
-                }`}
-              >
-                {volunteer.available ? "Available" : "Unavailable"}
-              </span>
-              <button
-                className="filter-btn"
-                onClick={() => toggleVolunteerAvailability(volunteer.id)}
-              >
-                Mark {volunteer.available ? "Unavailable" : "Available"}
-              </button>
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-
-  return (
-    <div className="dashboard">
-      <aside className="sidebar">
-        <div className="brand">🐾 Paw<span>Rescue</span></div>
-        <div className="sidebar-label">MAIN MENU</div>
-
-        {menu.map((item) => (
-          <button
-            key={item.name}
-            className={`nav-item ${activeTab === item.name ? "active" : ""}`}
-            onClick={() => setActiveTab(item.name)}
-          >
-            {item.icon} &nbsp; {item.name}
-          </button>
-        ))}
-
-        <div className="sidebar-bottom">
-          ❤️ Every rescue matters.
-          <br />
-          Together, we save lives.
-        </div>
-      </aside>
-
-      <main className="main">
-        <header className="topbar">
-          <div className="welcome">
-            <h1>Welcome back! 👋</h1>
-            <p>Here's what's happening with PawRescue today.</p>
-          </div>
-          <div className="profile">🧑 NGO Administrator</div>
-        </header>
-
-        {activeTab !== "Volunteers" && (
-          <section className="stats">
-            <div className="stat-card">
-              <div className="stat-icon">📋</div>
-              <div className="stat-number">128</div>
-              <div className="stat-label">Total Reports</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-icon">🚨</div>
-              <div className="stat-number">18</div>
-              <div className="stat-label">Pending Rescues</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-icon">🚑</div>
-              <div className="stat-number">12</div>
-              <div className="stat-label">Rescue In Progress</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-icon">❤️</div>
-              <div className="stat-number">98</div>
-              <div className="stat-label">Animals Rescued</div>
-            </div>
+                      <button
+                        className="reject-button"
+                        disabled={reviewing === item.id}
+                        onClick={() => handleReview(item.id, 'rejected')}
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
           </section>
         )}
 
-        {activeTab === "Overview" || activeTab === "Rescue Reports"
-  ? renderReports()
-  : activeTab === "Rescued Animals"
-  ? renderRescuedAnimals()
-  : activeTab === "Volunteers"
-  ? renderVolunteers()
-  : (
-    <section className="section-heading">
-      <div>
-        <h2>{activeTab}</h2>
-        <p>This section is ready for the next development step.</p>
-      </div>
-    </section>
-  )}
-         
-      </main>
+        {profile.role === 'ngo' && (
+          <>
+            <section className="panel organisation-panel">
+              <p className="eyebrow">NGO DASHBOARD</p>
+              <h2>{ngo?.organisation_name || 'Your organisation'}</h2>
 
-      {selectedReport && (
-        <div
-          className="modal-overlay"
-          onClick={() => setSelectedReport(null)}
-        >
-          <div
-            className="report-modal"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <button
-              className="close-btn"
-              onClick={() => setSelectedReport(null)}
-              aria-label="Close report details"
-            >
-              ✕
-            </button>
+              <div className="approved-status">
+                ✓ Organisation approved
+              </div>
 
-            <img
-              className="modal-photo"
-              src={selectedReport.image}
-              alt={selectedReport.name}
-            />
+              <p>Your organisation account is active.</p>
+            </section>
 
-            <h2>{selectedReport.name}</h2>
-            <p className="modal-id">Report ID: {selectedReport.id}</p>
+            <section className="panel">
+              <div className="panel-header">
+                <div>
+                  <h2>Assigned Rescue Reports</h2>
+                  <p>Reports assigned to your organisation.</p>
+                </div>
 
-            <div className="modal-details">
-              <p><strong>Animal:</strong> {selectedReport.type}</p>
-              <p><strong>Location:</strong> {selectedReport.location}</p>
-              <p><strong>Reported:</strong> {selectedReport.date}</p>
-              <p><strong>Urgency:</strong> {selectedReport.urgency}</p>
-              <p><strong>Status:</strong> {selectedReport.status}</p>
-              <p>
-                <strong>Volunteer:</strong>{" "}
-                {assigned[selectedReport.id] || "Not assigned"}
-              </p>
-            </div>
+                <span className="count">
+                  {assignedReports.length} assigned
+                </span>
+              </div>
 
-            <div className="assignment-area">
-              <h3>Assign Rescue Volunteer</h3>
-              <select
-                className="volunteer-select"
-                value={assigned[selectedReport.id] || ""}
-                onChange={(event) =>
-                  setAssigned((previous) => ({
-                    ...previous,
-                    [selectedReport.id]: event.target.value,
-                  }))
-                }
+              <button
+                className="secondary-button"
+                onClick={() => loadAssignedReports(session.user.id)}
               >
-                <option value="">Choose a volunteer</option>
-                {volunteers
-                  .filter((volunteer) => volunteer.available)
-                  .map((volunteer) => (
-                    <option key={volunteer.id} value={volunteer.name}>
-                      {volunteer.name}
-                    </option>
+                Refresh reports
+              </button>
+
+              {reportsLoading ? (
+                <div className="empty-state">
+                  Loading rescue reports...
+                </div>
+              ) : assignedReports.length === 0 ? (
+                <div className="empty-state">
+                  <h3>No assigned reports yet</h3>
+                  <p>
+                    New rescue assignments will appear here when an
+                    administrator assigns a case to your organisation.
+                  </p>
+                </div>
+              ) : (
+                <div className="report-list">
+                  {assignedReports.map(item => (
+                    <article className="report-card" key={item.id}>
+                      <div className="panel-header">
+                        <h3>
+                          🐾 {item.report.animal_type || 'Animal report'}
+                        </h3>
+
+                        <span className={`urgency-badge ${(
+                          item.report.urgency || 'unknown'
+                        ).toLowerCase()}`}>
+                          {item.report.urgency || 'Unknown urgency'}
+                        </span>
+                      </div>
+
+                      <p>{item.report.description || 'No description provided.'}</p>
+
+                      <div className="report-meta">
+                        <span>
+                          <strong>Location:</strong>{' '}
+                          {item.report.location_text || 'Not provided'}
+                        </span>
+
+                        <span>
+                          <strong>Report:</strong>{' '}
+                          {item.report.status || 'Unknown'}
+                        </span>
+
+                        <span>
+                          <strong>Assignment:</strong>{' '}
+                          {item.assignment_status || 'Assigned'}
+                        </span>
+                      </div>
+
+                      <p className="small-text">
+                        Reported: {new Date(item.report.created_at).toLocaleString()}
+                      </p>
+                    </article>
                   ))}
-              </select>
-
-              {assigned[selectedReport.id] && (
-                <p className="assignment-success">
-                  ✓ Volunteer assigned successfully!
-                </p>
+                </div>
               )}
-            </div>
+            </section>
+          </>
+        )}
 
-            <button
-              className="modal-action"
-              onClick={() => setSelectedReport(null)}
-            >
-              Done
-            </button>
-          </div>
+        {profile.role === 'user' && (
+          <section className="panel">
+            <h2>Registration status</h2>
+
+            {ngo ? (
+              <>
+                <p><strong>{ngo.organisation_name}</strong></p>
+
+                <div className={
+                  ngo.verification_status === 'rejected'
+                    ? 'rejected-status'
+                    : 'pending-status'
+                }>
+                  {ngo.verification_status === 'rejected'
+                    ? 'Application rejected'
+                    : '⏳ Pending admin verification'}
+                </div>
+              </>
+            ) : (
+              <p>You are signed in with a standard user account.</p>
+            )}
+          </section>
+        )}
+
+        {profile.role === 'veterinarian' && (
+          <section className="panel">
+            <h2>Veterinarian workspace</h2>
+            <p>Your veterinarian dashboard will be connected here.</p>
+          </section>
+        )}
+
+        {message && <p className="success-message">{message}</p>}
+        {error && <p className="error-message">{error}</p>}
+      </main>
+    )
+  }
+
+  return (
+    <main className="auth-page">
+      <section className="auth-card">
+        <div className="auth-brand">
+          <span className="brand-icon">🐾</span>
+          <h1>PawRescue</h1>
+          <p>Animal Rescue Management Portal</p>
         </div>
-      )}
-    </div>
-  );
+
+        <div className="tabs">
+          <button
+            className={mode === 'login' ? 'tab active' : 'tab'}
+            onClick={() => {
+              setMode('login')
+              setError('')
+              setMessage('')
+            }}
+          >
+            Login
+          </button>
+
+          <button
+            className={mode === 'signup' ? 'tab active' : 'tab'}
+            onClick={() => {
+              setMode('signup')
+              setError('')
+              setMessage('')
+            }}
+          >
+            NGO Registration
+          </button>
+        </div>
+
+        <h2 className="auth-heading">
+          {mode === 'login' ? 'Welcome back' : 'Register your NGO'}
+        </h2>
+
+        <form
+          onSubmit={mode === 'login' ? handleLogin : handleSignup}
+          className="form-stack"
+        >
+          {mode === 'signup' && (
+            <>
+              <label>Full name</label>
+              <input
+                value={fullName}
+                onChange={e => setFullName(e.target.value)}
+                required
+                placeholder="Your full name"
+              />
+
+              <label>Organisation name</label>
+              <input
+                value={organisationName}
+                onChange={e => setOrganisationName(e.target.value)}
+                required
+                placeholder="Your NGO's name"
+              />
+
+              <label>Organisation description</label>
+              <textarea
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                placeholder="Tell us about your organisation"
+                rows={3}
+              />
+            </>
+          )}
+
+          <label>Email</label>
+          <input
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            required
+            placeholder="Enter your email"
+          />
+
+          <label>Password</label>
+          <input
+            type="password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            required
+            minLength={8}
+            placeholder="At least 8 characters"
+          />
+
+          <button type="submit" disabled={submitting} className="primary-button">
+            {submitting
+              ? 'Please wait...'
+              : mode === 'login'
+                ? 'Sign in'
+                : 'Submit NGO Registration'}
+          </button>
+        </form>
+
+        {message && <p className="success-message">{message}</p>}
+        {error && <p className="error-message">{error}</p>}
+      </section>
+    </main>
+  )
 }
 
 export default App;
