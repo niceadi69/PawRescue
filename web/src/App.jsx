@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
 import './App.css'
+import Member4Links, { AdoptLink } from './member4/Member4Links'
 
 function TriageDetails({ report }) {
   const analysis = report?.ai_analysis
@@ -935,12 +936,7 @@ function App() {
           </section>
         )}
 
-        {profile.role === 'veterinarian' && (
-          <section className="panel">
-            <h2>Veterinarian workspace</h2>
-            <p>Your veterinarian dashboard will be connected here.</p>
-          </section>
-        )}
+        <Member4Links role={profile.role} />
 
         {message && <p className="success-message">{message}</p>}
         {error && <p className="error-message">{error}</p>}
@@ -1047,6 +1043,8 @@ function App() {
 
         {message && <p className="success-message">{message}</p>}
         {error && <p className="error-message">{error}</p>}
+
+        <AdoptLink />
       </section>
     </main>
   )

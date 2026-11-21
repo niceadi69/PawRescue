@@ -1,0 +1,493 @@
+/* Member 4 (Rhythm): donation page (demo). Colours follow member4.css. */
+.dn-page {
+  background: var(--m4-cream);
+}
+
+/* hero */
+.dn-hero {
+  padding: 22px 24px 64px;
+  color: #EADBCC;
+  background: radial-gradient(120% 140% at 85% 0%, #7A4A33 0%, var(--m4-dark) 55%, #2E1A12 100%);
+}
+
+.dn-nav {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dn-nav .m4-brand {
+  color: #FFFFFF;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.dn-links {
+  display: flex;
+  gap: 6px;
+}
+
+.dn-links a {
+  padding: 8px 14px;
+  border-radius: 999px;
+  color: #EADBCC;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.dn-links a:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.dn-links .dn-on,
+.dn-links .dn-on:hover {
+  background: #FFFFFF;
+  color: var(--m4-dark);
+}
+
+.dn-hero-body {
+  max-width: 760px;
+  margin: 48px auto 0;
+  text-align: center;
+}
+
+.dn-kicker {
+  margin: 0;
+  color: #F3A57C;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.dn-hero h1 {
+  margin: 12px 0;
+  color: #FFFFFF;
+  font-size: clamp(30px, 5vw, 46px);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.dn-hero-body p:last-child {
+  max-width: 620px;
+  margin: 0 auto;
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+/* demo notice, floating over the hero's edge */
+.dn-demo {
+  position: relative;
+  width: min(1132px, calc(100% - 48px));
+  margin: -28px auto 0;
+  padding: 14px 18px;
+  border: 1px solid #F1D39C;
+  border-radius: 14px;
+  background: #FFF4E0;
+  color: #6B4A12;
+  font-size: 14px;
+  line-height: 1.5;
+  box-shadow: 0 10px 30px rgba(43, 26, 18, 0.1);
+}
+
+/* layout */
+.dn-main {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 24px 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.dn-top {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 24px;
+}
+
+.dn-card {
+  padding: 24px;
+  border: 1px solid var(--m4-border);
+  border-radius: 20px;
+  background: #FFFFFF;
+  box-shadow: 0 12px 32px rgba(43, 26, 18, 0.06);
+}
+
+.dn-card h2,
+.dn-section-head h2 {
+  margin: 0;
+  color: var(--m4-dark);
+  font-size: 22px;
+}
+
+.dn-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dn-tag {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #FBEBD0;
+  color: #8A5A14;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dn-label {
+  margin: 20px 0 10px;
+  color: var(--m4-muted);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dn-muted {
+  margin: 4px 0 0;
+  color: var(--m4-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.dn-fine {
+  margin: 10px 0 0;
+  color: var(--m4-muted);
+  font-size: 12px;
+}
+
+/* amount picker */
+.dn-amounts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dn-amount {
+  padding: 10px 16px;
+  border: 1px solid var(--m4-beige);
+  border-radius: 12px;
+  background: #FFFFFF;
+  color: var(--m4-dark);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.dn-amount:hover {
+  border-color: var(--m4-caramel);
+}
+
+.dn-amount-on,
+.dn-amount-on:hover {
+  border-color: var(--m4-dark);
+  background: var(--m4-dark);
+  color: #FFFFFF;
+}
+
+.dn-custom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid var(--m4-beige);
+  border-radius: 12px;
+  background: #FFFFFF;
+}
+
+.dn-custom-on {
+  border-color: var(--m4-dark);
+  box-shadow: 0 0 0 1px var(--m4-dark);
+}
+
+.dn-custom span {
+  color: var(--m4-muted);
+  font-weight: 700;
+}
+
+.dn-custom input {
+  width: 86px;
+  padding: 10px 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--m4-dark);
+  font-weight: 700;
+}
+
+/* UPI pay block */
+.dn-pay {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.dn-pay-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.dn-pay-amount {
+  margin: 0;
+  color: var(--m4-dark);
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.dn-id,
+.dn-addr {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--m4-cream);
+}
+
+.dn-id {
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.dn-id span {
+  color: var(--m4-muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dn-id code,
+.dn-addr code {
+  min-width: 0;
+  color: var(--m4-dark);
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.dn-copy {
+  flex: none;
+  margin-left: auto;
+  padding: 6px 12px;
+  border: 1px solid var(--m4-beige);
+  border-radius: 10px;
+  background: #FFFFFF;
+  color: var(--m4-brown);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dn-copy:hover {
+  border-color: var(--m4-caramel);
+}
+
+/* demo QR */
+.dn-qr {
+  position: relative;
+  flex: none;
+  width: 188px;
+  aspect-ratio: 1;
+  padding: 10px;
+  border: 1px solid var(--m4-border);
+  border-radius: 18px;
+  background: #FFFFFF;
+  box-shadow: 0 8px 24px rgba(43, 26, 18, 0.08);
+}
+
+.dn-qr svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.dn-qr-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  transform: translate(-50%, -50%);
+  border-radius: 10px;
+  background: #FFFFFF;
+  color: var(--m4-dark);
+  font-size: 20px;
+  font-weight: 800;
+}
+
+/* where it goes */
+.dn-impact-list {
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dn-impact-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.dn-icon {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--m4-cream);
+  font-size: 22px;
+}
+
+.dn-impact-list h3 {
+  margin: 2px 0;
+  color: var(--m4-dark);
+  font-size: 16px;
+}
+
+.dn-impact-list p {
+  margin: 0;
+  color: var(--m4-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* crypto */
+.dn-coins {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.dn-coin {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.dn-coin-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dn-coin-head h3 {
+  margin: 0;
+  color: var(--m4-dark);
+  font-size: 17px;
+}
+
+.dn-coin-head .dn-tag {
+  margin-left: auto;
+}
+
+.dn-coin-badge {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #FFFFFF;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.dn-coin-btc .dn-coin-badge {
+  background: #C9752A;
+}
+
+.dn-coin-eth .dn-coin-badge {
+  background: #5B5F97;
+}
+
+.dn-coin-usdt .dn-coin-badge {
+  background: #2E7D68;
+}
+
+.dn-coin .dn-qr {
+  align-self: center;
+  width: 200px;
+}
+
+/* closing call to action */
+.dn-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 28px;
+  border-radius: 20px;
+  background: var(--m4-dark);
+  color: #EADBCC;
+}
+
+.dn-cta h2 {
+  margin: 0 0 4px;
+  color: #FFFFFF;
+  font-size: 22px;
+}
+
+.dn-cta p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.dn-cta .m4-button {
+  flex: none;
+  background: #FFFFFF;
+  color: var(--m4-dark);
+  text-decoration: none;
+}
+
+.dn-foot {
+  padding: 0 24px 36px;
+  color: var(--m4-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .dn-nav,
+  .dn-links {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .dn-links a {
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 900px) {
+  .dn-top,
+  .dn-coins {
+    grid-template-columns: 1fr;
+  }
+
+  .dn-pay,
+  .dn-cta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

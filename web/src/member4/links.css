@@ -1,0 +1,49 @@
+/* Member 4 (Rhythm): links from the main dashboard to the vet and adoption pages.
+   Colours come from the dashboard's own variables in App.css. */
+.m4-link-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.m4-link {
+  display: inline-block;
+  padding: 11px 19px;
+  border-radius: 10px;
+  border: 1px solid var(--border, #e5ebe3);
+  background: var(--white, #ffffff);
+  color: var(--forest, #183c2d);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.m4-link:hover {
+  border-color: var(--green, #32865b);
+  color: var(--green, #32865b);
+}
+
+.m4-link-main {
+  background: var(--forest, #183c2d);
+  border-color: var(--forest, #183c2d);
+  color: var(--white, #ffffff);
+}
+
+.m4-link-main:hover {
+  background: var(--green, #32865b);
+  border-color: var(--green, #32865b);
+  color: var(--white, #ffffff);
+}
+
+.m4-adopt-link {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted, #7c8c80);
+}
+
+.m4-adopt-link a {
+  color: var(--green, #32865b);
+  font-weight: 700;
+}

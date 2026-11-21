@@ -1,0 +1,645 @@
+/* Member 4 (Rhythm): PawRescue vet desk, adoption desk and adoption portal.
+   Classes are prefixed m4- so they never clash with the NGO dashboard. */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --m4-dark: #4B2E22;
+  --m4-brown: #795548;
+  --m4-caramel: #B88962;
+  --m4-beige: #DCC5A8;
+  --m4-cream: #F7F1E8;
+  --m4-text: #35251C;
+  --m4-muted: #907D6E;
+  --m4-border: #EDE2D5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'DM Sans', sans-serif;
+  background: var(--m4-cream);
+  color: var(--m4-text);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.m4-page {
+  min-height: 100vh;
+}
+
+.m4-center {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.m4-main {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 24px 60px;
+}
+
+.m4-brand {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--m4-dark);
+}
+
+.m4-brand span {
+  color: var(--m4-caramel);
+}
+
+.m4-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  background: var(--m4-dark);
+}
+
+.m4-topbar .m4-brand {
+  color: #FFFFFF;
+}
+
+.m4-topbar-title {
+  margin-left: 12px;
+  padding-left: 12px;
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+  font-size: 16px;
+  font-weight: 600;
+  color: #E9DCD0 !important;
+}
+
+.m4-topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #E9DCD0;
+  font-size: 14px;
+}
+
+.m4-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.m4-heading h1,
+.m4-section h2 {
+  margin: 0 0 6px;
+  color: var(--m4-dark);
+}
+
+.m4-heading h1 {
+  font-size: 26px;
+}
+
+.m4-section {
+  margin-top: 36px;
+}
+
+.m4-section h2 {
+  font-size: 20px;
+  margin-bottom: 14px;
+}
+
+.m4-muted {
+  margin: 4px 0;
+  color: var(--m4-muted);
+  font-size: 14px;
+}
+
+.m4-card {
+  background: #FFFFFF;
+  border: 1px solid var(--m4-border);
+  border-radius: 16px;
+}
+
+.m4-auth {
+  width: 100%;
+  max-width: 380px;
+  display: grid;
+  gap: 14px;
+  padding: 32px;
+  box-shadow: 0 12px 32px rgba(75, 46, 34, 0.08);
+}
+
+.m4-auth h1 {
+  margin: 4px 0 0;
+  font-size: 21px;
+  color: var(--m4-dark);
+}
+
+.m4-label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--m4-dark);
+}
+
+.m4-label input,
+.m4-label select,
+.m4-label textarea {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--m4-beige);
+  border-radius: 10px;
+  background: #FFFFFF;
+  font-weight: 400;
+  color: var(--m4-text);
+}
+
+.m4-label textarea {
+  resize: vertical;
+}
+
+.m4-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  padding: 11px 16px;
+  border: none;
+  border-radius: 10px;
+  background: var(--m4-dark);
+  color: #FFFFFF;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.m4-button:hover {
+  background: var(--m4-brown);
+}
+
+.m4-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.m4-button-quiet {
+  background: #FFFFFF;
+  color: var(--m4-brown);
+  border: 1px solid var(--m4-beige);
+}
+
+.m4-button-quiet:hover {
+  background: var(--m4-cream);
+}
+
+.m4-error {
+  margin: 8px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #FCE2DB;
+  color: #B44229;
+  font-size: 14px;
+}
+
+.m4-success {
+  margin: 8px 0;
+  color: #397546;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.m4-empty {
+  padding: 28px;
+  border: 1px dashed var(--m4-beige);
+  border-radius: 16px;
+  background: #FFFFFF;
+  color: var(--m4-muted);
+  text-align: center;
+}
+
+.m4-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.m4-tab {
+  padding: 9px 16px;
+  border: 1px solid var(--m4-beige);
+  border-radius: 20px;
+  background: #FFFFFF;
+  color: var(--m4-brown);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.m4-tab.active {
+  background: var(--m4-dark);
+  border-color: var(--m4-dark);
+  color: #FFFFFF;
+}
+
+.m4-count {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 12px;
+  background: var(--m4-cream);
+  color: var(--m4-brown);
+  font-size: 12px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.m4-tab.active .m4-count {
+  background: rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+}
+
+.m4-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.m4-grid-wide {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+.m4-list {
+  display: grid;
+  gap: 12px;
+}
+
+.m4-case,
+.m4-pet {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+}
+
+.m4-case-body {
+  flex: 1;
+}
+
+.m4-case-body h3 {
+  margin: 4px 0 6px;
+  font-size: 16px;
+  color: var(--m4-dark);
+}
+
+.m4-thumb,
+.m4-pet-photo {
+  width: 100%;
+  border-radius: 12px;
+  object-fit: cover;
+  background: var(--m4-beige);
+}
+
+.m4-thumb {
+  height: 160px;
+}
+
+.m4-pet-photo {
+  height: 220px;
+}
+
+.m4-thumb-empty {
+  display: grid;
+  place-items: center;
+  font-size: 40px;
+}
+
+.m4-code {
+  margin: 0;
+  color: var(--m4-caramel);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.m4-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.m4-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: #F0E8DE;
+  color: var(--m4-brown);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.m4-badge-good {
+  background: #E2F1E3;
+  color: #397546;
+}
+
+.m4-badge-warn {
+  background: #FFF0D6;
+  color: #93631F;
+}
+
+.urgency-critical,
+.urgency-high {
+  background: #FCE2DB;
+  color: #B44229;
+}
+
+.urgency-medium {
+  background: #FFF0D6;
+  color: #93631F;
+}
+
+.urgency-low {
+  background: #E2F1E3;
+  color: #397546;
+}
+
+.m4-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px 16px;
+  overflow-y: auto;
+  background: rgba(40, 25, 17, 0.65);
+}
+
+.m4-modal {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  padding: 28px;
+  border-radius: 20px;
+  background: #FFFFFF;
+}
+
+.m4-modal h2 {
+  margin: 6px 0;
+  color: var(--m4-dark);
+}
+
+.m4-modal h3 {
+  margin: 0 0 8px;
+  color: var(--m4-dark);
+  font-size: 16px;
+}
+
+.m4-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: var(--m4-dark);
+  color: #FFFFFF;
+  cursor: pointer;
+}
+
+.m4-modal-photo {
+  width: 100%;
+  max-height: 320px;
+  margin-bottom: 12px;
+  border-radius: 14px;
+  object-fit: cover;
+}
+
+.m4-photos {
+  display: flex;
+  gap: 8px;
+  margin: 14px 0;
+  overflow-x: auto;
+}
+
+.m4-photos img {
+  width: 96px;
+  height: 96px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.m4-ai,
+.m4-story,
+.m4-success-box {
+  margin: 16px 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--m4-cream);
+}
+
+.m4-ai p,
+.m4-story p {
+  margin: 6px 0;
+  font-size: 14px;
+}
+
+.m4-ai ul {
+  margin: 6px 0;
+  padding-left: 18px;
+  font-size: 14px;
+}
+
+.m4-success-box {
+  background: #E2F1E3;
+  color: #2F5E38;
+}
+
+.m4-assign {
+  margin: 16px 0;
+  padding: 14px 16px;
+  border: 1px solid var(--m4-beige);
+  border-radius: 12px;
+}
+
+.m4-assign p {
+  margin: 6px 0;
+  font-size: 14px;
+}
+
+.m4-assign-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.m4-assign-row select {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--m4-beige);
+  border-radius: 10px;
+  background: #FFFFFF;
+}
+
+.m4-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.m4-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.m4-fieldset {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--m4-beige);
+  border-radius: 10px;
+}
+
+.m4-fieldset legend {
+  padding: 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--m4-dark);
+}
+
+.m4-radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.m4-history {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--m4-border);
+}
+
+.m4-record {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--m4-border);
+  border-radius: 12px;
+}
+
+.m4-record p {
+  margin: 6px 0;
+  font-size: 14px;
+}
+
+.m4-record-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.m4-application {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px;
+}
+
+.m4-application h3 {
+  margin: 4px 0 6px;
+  color: var(--m4-dark);
+}
+
+.m4-application p {
+  margin: 4px 0;
+  font-size: 14px;
+}
+
+.m4-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.m4-hero {
+  padding: 48px 24px 36px;
+  background: var(--m4-dark);
+  color: #E9DCD0;
+  text-align: center;
+}
+
+.m4-hero .m4-brand {
+  color: #FFFFFF;
+}
+
+.m4-hero h1 {
+  max-width: 720px;
+  margin: 16px auto 10px;
+  color: #FFFFFF;
+  font-size: 34px;
+  line-height: 1.2;
+}
+
+.m4-hero p {
+  max-width: 620px;
+  margin: 8px auto;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.m4-hero-note {
+  display: inline-block;
+  margin-top: 14px !important;
+  padding: 8px 14px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 14px !important;
+}
+
+@media (max-width: 640px) {
+  .m4-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .m4-application,
+  .m4-heading {
+    flex-direction: column;
+  }
+
+  .m4-topbar-title {
+    display: none;
+  }
+
+  .m4-hero h1 {
+    font-size: 26px;
+  }
+}
+
+/* link from the adoption portal hero to the donation page */
+.m4-hero-link {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #FFFFFF;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.m4-hero-link:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
