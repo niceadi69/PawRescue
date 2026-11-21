@@ -79,6 +79,14 @@ const MEDICAL_STATUS_LABELS = {
   cleared_for_adoption: 'Cleared for adoption'
 }
 
+const LOGIN_ROLES = [
+  { value: 'user', label: 'General / Applicant', icon: '👤' },
+  { value: 'ngo', label: 'NGO', icon: '🏥' },
+  { value: 'volunteer', label: 'Volunteer', icon: '🙋' },
+  { value: 'admin', label: 'Admin', icon: '🛡️' },
+  { value: 'veterinarian', label: 'Veterinarian', icon: '🩺' }
+]
+
 function MedicalProgress({ report }) {
   const medical = report?.latestMedicalRecord
 
@@ -166,6 +174,8 @@ function App() {
   const [areaSubmitting, setAreaSubmitting] = useState(false)
 
   const [mode, setMode] = useState('login')
+  const [loginRole, setLoginRole] = useState('user')
+
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [reviewing, setReviewing] = useState(null)
@@ -192,6 +202,24 @@ function App() {
   // Veterinarian application fields
   const [vetQualification, setVetQualification] = useState('')
   const [vetClinicName, setVetClinicName] = useState('')
+
+  function clearAuthMessages() {
+    setError('')
+    setMessage('')
+  }
+
+  function resetDashboardData() {
+    setProfile(null)
+    setNgo(null)
+    setVolunteer(null)
+    setVetApplication(null)
+    setPendingNGOs([])
+    setPendingVolunteers([])
+    setPendingVetApplications([])
+    setAssignedReports([])
+    setAvailableOffers([])
+    setServiceAreas([])
+  }
 
   async function loadPendingNGOs() {
     const { data, error } = await supabase
@@ -575,16 +603,7 @@ function App() {
       (_event, newSession) => {
         if (mounted) {
           setSession(newSession)
-          setProfile(null)
-          setNgo(null)
-          setVolunteer(null)
-          setVetApplication(null)
-          setPendingNGOs([])
-          setPendingVolunteers([])
-          setPendingVetApplications([])
-          setAssignedReports([])
-          setAvailableOffers([])
-          setServiceAreas([])
+          resetDashboardData()
           setError('')
           setMessage('')
         }
@@ -601,33 +620,69 @@ function App() {
     if (session?.user) {
       loadProfile(session.user)
     } else {
-      setProfile(null)
-      setNgo(null)
-      setVolunteer(null)
-      setVetApplication(null)
-      setPendingNGOs([])
-      setPendingVolunteers([])
-      setPendingVetApplications([])
-      setAssignedReports([])
-      setAvailableOffers([])
-      setServiceAreas([])
+      resetDashboardData()
     }
   }, [session])
 
+  // Role-specific login
   async function handleLogin(event) {
     event.preventDefault()
     setSubmitting(true)
     setError('')
     setMessage('')
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    try {
+      const { data, error: loginError } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
 
-    if (error) setError(error.message)
+      if (loginError) {
+        setError(loginError.message)
+        return
+      }
 
-    setSubmitting(false)
+      const { data: account, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single()
+
+      if (profileError || !account) {
+        await supabase.auth.signOut()
+        setError(
+          profileError?.message ||
+          'Could not verify your account role.'
+        )
+        return
+      }
+
+      if (account.role !== loginRole) {
+        await supabase.auth.signOut()
+
+        const roleNames = {
+          user: 'General / Applicant',
+          ngo: 'NGO',
+          volunteer: 'Volunteer',
+          admin: 'Admin',
+          veterinarian: 'Veterinarian',
+        }
+
+        setError(
+          `This account is not registered as ${roleNames[loginRole]}. ` +
+          `Your account role is ${roleNames[account.role] || account.role}. ` +
+          'Please select the correct login portal.'
+        )
+        return
+      }
+
+      setMessage('Login successful!')
+    } catch (err) {
+      setError(err.message || 'Something went wrong during login.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   async function handleSignup(event) {
@@ -1030,18 +1085,12 @@ function App() {
     }
 
     setSession(null)
-    setProfile(null)
-    setNgo(null)
-    setVolunteer(null)
-    setVetApplication(null)
-    setPendingNGOs([])
-    setPendingVolunteers([])
-    setPendingVetApplications([])
-    setAssignedReports([])
-    setAvailableOffers([])
-    setServiceAreas([])
+    resetDashboardData()
     setMessage('')
     setError('')
+    setShowAuth(false)
+    setMode('login')
+    setLoginRole('user')
   }
 
   if (loading) {
@@ -1791,53 +1840,82 @@ function App() {
 
         <div className="tabs">
           <button
+            type="button"
             className={mode === 'login' ? 'tab active' : 'tab'}
             onClick={() => {
               setMode('login')
-              setError('')
-              setMessage('')
+              clearAuthMessages()
             }}
           >
             Login
           </button>
 
           <button
+            type="button"
             className={mode === 'signup' ? 'tab active' : 'tab'}
             onClick={() => {
               setMode('signup')
-              setError('')
-              setMessage('')
+              clearAuthMessages()
             }}
           >
             NGO Registration
           </button>
 
           <button
+            type="button"
             className={mode === 'volunteer' ? 'tab active' : 'tab'}
             onClick={() => {
               setMode('volunteer')
-              setError('')
-              setMessage('')
+              clearAuthMessages()
             }}
           >
             Volunteer Registration
           </button>
 
           <button
+            type="button"
             className={mode === 'veterinarian' ? 'tab active' : 'tab'}
             onClick={() => {
               setMode('veterinarian')
-              setError('')
-              setMessage('')
+              clearAuthMessages()
             }}
           >
-            Veterinarian
+            Veterinarian Registration
           </button>
         </div>
 
+        {mode === 'login' && (
+          <div className="login-role-section">
+            <p className="login-role-heading">Choose your login portal</p>
+
+            <div className="login-role-grid">
+              {LOGIN_ROLES.map(role => (
+                <button
+                  key={role.value}
+                  type="button"
+                  className={
+                    loginRole === role.value
+                      ? 'login-role-button selected'
+                      : 'login-role-button'
+                  }
+                  onClick={() => {
+                    setLoginRole(role.value)
+                    clearAuthMessages()
+                  }}
+                >
+                  <span className="login-role-icon">{role.icon}</span>
+                  <span>{role.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <h2 className="auth-heading">
           {mode === 'login'
-            ? 'Welcome back'
+            ? loginRole === 'user'
+              ? 'Welcome back'
+              : `${LOGIN_ROLES.find(role => role.value === loginRole)?.label || 'Account'} Login`
             : mode === 'signup'
               ? 'Register your NGO'
               : mode === 'volunteer'
@@ -1895,7 +1973,7 @@ function App() {
             <div className="empty-state">
               <p>
                 This registration is for qualified veterinary professionals.
-                After creating an account and signing in, you can submit your
+                After creating an account and signing in, they can submit their
                 qualification and clinic details for admin review.
               </p>
             </div>
@@ -1928,7 +2006,7 @@ function App() {
             {submitting
               ? 'Please wait...'
               : mode === 'login'
-                ? 'Sign in'
+                ? `Sign in${loginRole !== 'user' ? ` as ${LOGIN_ROLES.find(role => role.value === loginRole)?.label}` : ''}`
                 : mode === 'signup'
                   ? 'Submit NGO Registration'
                   : mode === 'volunteer'
