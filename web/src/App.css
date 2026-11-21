@@ -916,3 +916,23 @@ tr:hover td {
     grid-template-columns: 1fr;
   }
 }
+
+/* Back link on the sign-in card */
+
+.back-home-button {
+  display: inline-block;
+  margin: 0 0 14px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--green);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.back-home-button:hover {
+  border: none;
+  color: var(--forest);
+  text-decoration: underline;
+  transform: none;
+}

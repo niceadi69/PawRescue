@@ -1,6 +1,6 @@
 
 import Home from './pages/Home'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from './supabaseClient'
 import './App.css'
 import Member4Links, { AdoptLink } from './member4/Member4Links'
@@ -151,6 +151,7 @@ function MedicalProgress({ report }) {
 
 function App() {
   const [session, setSession] = useState(null)
+  const currentUserIdRef = useRef(null)
   const [profile, setProfile] = useState(null)
   const [ngo, setNgo] = useState(null)
   const [volunteer, setVolunteer] = useState(null)
@@ -593,20 +594,30 @@ function App() {
 
       if (error) setError(error.message)
 
+      currentUserIdRef.current = data?.session?.user?.id ?? null
       setSession(data?.session ?? null)
       setLoading(false)
     }
 
     initialize()
 
+    // Supabase also fires this on token refresh and when the tab regains
+    // focus. Only wipe the dashboard when a different user signs in or out,
+    // otherwise every tab switch reloads everything and clears messages.
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
-        if (mounted) {
-          setSession(newSession)
+        if (!mounted) return
+
+        const nextUserId = newSession?.user?.id ?? null
+
+        if (nextUserId !== currentUserIdRef.current) {
+          currentUserIdRef.current = nextUserId
           resetDashboardData()
           setError('')
           setMessage('')
         }
+
+        setSession(newSession)
       }
     )
 
@@ -616,13 +627,19 @@ function App() {
     }
   }, [])
 
+  // Keyed on the user id, not the session object: the session object is
+  // replaced on every token refresh, which used to load the profile twice in
+  // parallel (and could insert the same NGO row twice).
+  const sessionUserId = session?.user?.id ?? null
+
   useEffect(() => {
     if (session?.user) {
       loadProfile(session.user)
     } else {
       resetDashboardData()
     }
-  }, [session])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionUserId])
 
   // Role-specific login
   async function handleLogin(event) {
@@ -1109,7 +1126,7 @@ function App() {
           <section className="auth-card">
             <button
               type="button"
-              onClick={() => setShowAuth(false)}
+              onClick={handleLogout}
               style={{
                 background: 'none',
                 border: 'none',
@@ -1119,7 +1136,7 @@ function App() {
                 marginBottom: '16px'
               }}
             >
-              ← Back to homepage
+              ← Sign out and go back to the homepage
             </button>
 
             <h1>🐾 PawRescue</h1>
@@ -1132,6 +1149,10 @@ function App() {
         </main>
       )
     }
+
+    // What the person chose when signing up: 'ngo', 'volunteer',
+    // 'veterinarian' or 'user'. Used to show only the relevant application.
+    const registrationType = session.user.user_metadata?.registration_type
 
     return (
       <main className="dashboard">
@@ -1612,7 +1633,8 @@ function App() {
           </section>
         )}
 
-        {profile.role === 'user' && (
+        {profile.role === 'user' &&
+          (ngo || vetApplication || volunteer || registrationType !== 'veterinarian') && (
           <section className="panel">
             {ngo ? (
               <>
@@ -1776,7 +1798,8 @@ function App() {
           </section>
         )}
 
-        {profile.role === 'user' && !ngo && !volunteer && !vetApplication && (
+        {profile.role === 'user' && !ngo && !volunteer && !vetApplication &&
+          registrationType !== 'volunteer' && (
           <section className="panel">
             <h2>🩺 Veterinarian applications</h2>
             <p>
@@ -1832,6 +1855,17 @@ function App() {
   return (
     <main className="auth-page">
       <section className="auth-card">
+        <button
+          type="button"
+          className="back-home-button"
+          onClick={() => {
+            setShowAuth(false)
+            clearAuthMessages()
+          }}
+        >
+          ← Back to homepage
+        </button>
+
         <div className="auth-brand">
           <span className="brand-icon">🐾</span>
           <h1>PawRescue</h1>

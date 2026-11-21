@@ -25,9 +25,12 @@ Create `web/.env`:
 ```env
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+# Optional: link for the landing page's "Report an Injured Animal" button
+VITE_TELEGRAM_BOT_URL=https://t.me/your_bot_username
 ```
 
-Use the Supabase publishable/anon key only.
+Use the Supabase publishable/anon key only. Without `VITE_TELEGRAM_BOT_URL`
+the landing page's main button goes to the cruelty report form instead.
 
 NEVER put the Supabase service-role key or Gemini API key in frontend code or frontend environment variables.
 

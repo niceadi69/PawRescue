@@ -1,6 +1,11 @@
 
 import "./Home.css";
 
+// Injured animals are reported through the Telegram bot. Set
+// VITE_TELEGRAM_BOT_URL (e.g. https://t.me/YourBotName) in web/.env to show
+// the button; the web form below is only for cruelty and abuse.
+const BOT_URL = (import.meta.env.VITE_TELEGRAM_BOT_URL || "").trim();
+
 function Home({ onSignIn }) {
   const base = import.meta.env.BASE_URL;
 
@@ -13,6 +18,10 @@ function Home({ onSignIn }) {
         </a>
 
         <div className="nav-actions">
+          <a className="nav-link" href={`${base}adopt.html`}>
+            Adopt
+          </a>
+
           <a className="donate-btn" href={`${base}donate.html`}>
             Donate Now
           </a>
@@ -41,14 +50,42 @@ function Home({ onSignIn }) {
             need with people who can make a difference.
           </p>
 
-          <a className="report-btn" href={`${base}report.html`}>
-            🐾 Report an Injured Animal
-            <span>→</span>
-          </a>
+          {BOT_URL ? (
+            <>
+              <a
+                className="report-btn"
+                href={BOT_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                🐾 Report an Injured Animal
+                <span>→</span>
+              </a>
 
-          <p className="hero-note">
-            Your report could be the beginning of a rescue.
-          </p>
+              <div>
+                <a className="report-secondary" href={`${base}report.html`}>
+                  Witnessed cruelty or abuse? Report it here →
+                </a>
+              </div>
+
+              <p className="hero-note">
+                Injured animal reports open in Telegram: no app sign-up, just
+                send a photo and your location.
+              </p>
+            </>
+          ) : (
+            <>
+              <a className="report-btn" href={`${base}report.html`}>
+                🐾 Report Animal Cruelty
+                <span>→</span>
+              </a>
+
+              <p className="hero-note">
+                Found an injured animal? Message the PawRescue Telegram bot with
+                /report.
+              </p>
+            </>
+          )}
         </div>
 
         <div className="animal-gallery">
