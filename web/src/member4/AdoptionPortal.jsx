@@ -61,6 +61,9 @@ export default function AdoptionPortal() {
           Seen an injured or abused animal? Report it in seconds through the
           PawRescue Telegram bot.
         </p>
+        <a className="m4-hero-link" href={`${import.meta.env.BASE_URL}donate.html`}>
+          Support a rescue with a donation →
+        </a>
       </header>
 
       <main className="m4-main">

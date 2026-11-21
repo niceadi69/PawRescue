@@ -9,6 +9,7 @@ const PAGES = {
   vet: { href: `${base}vet.html`, label: "Open the vet desk" },
   desk: { href: `${base}adoption-desk.html`, label: "Open the adoption desk" },
   adopt: { href: `${base}adopt.html`, label: "View the public adoption portal" },
+  donate: { href: `${base}donate.html`, label: "Open the donation page" },
 };
 
 const BY_ROLE = {
@@ -56,6 +57,8 @@ export function AdoptLink() {
   return (
     <p className="m4-adopt-link">
       Looking to adopt? <a href={PAGES.adopt.href}>Meet the rescued animals</a>
+      {" · "}
+      <a href={PAGES.donate.href}>Support a rescue</a>
     </p>
   );
 }

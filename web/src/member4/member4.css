@@ -627,3 +627,19 @@ textarea {
     font-size: 26px;
   }
 }
+
+/* link from the adoption portal hero to the donation page */
+.m4-hero-link {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #FFFFFF;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.m4-hero-link:hover {
+  background: rgba(255, 255, 255, 0.18);
+}

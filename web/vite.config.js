@@ -16,6 +16,7 @@ export default defineConfig({
         vet: page('./vet.html'),
         adoptionDesk: page('./adoption-desk.html'),
         adopt: page('./adopt.html'),
+        donate: page('./donate.html'),
       },
     },
   },

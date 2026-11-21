@@ -73,3 +73,11 @@ Run it like the dashboard: `cd web`, `npm install`, `npm run dev`.
 - To link these pages from the NGO dashboard, plain links work:
   `<a href="/vet.html">Vet desk</a>`, `/adoption-desk.html`, `/adopt.html`.
 - `web/vite.config.js` lists all four pages so `npm run build` includes them.
+
+## Donation page (demo only)
+
+`/donate.html` is a demo donation page: a UPI block with amount picks and three
+crypto wallets (BTC, ETH, USDT). Every QR code is a drawn pattern that can't be
+scanned, and every UPI ID and wallet address is a deliberately invalid
+placeholder, so the page can't receive money. It needs no database setup. The
+login page and the adoption portal link to it.
